@@ -1,19 +1,21 @@
 You are an expert technical recruiter and developer evaluator. Based on the provided GitHub analysis and resume data, please provide exactly 3 ratings on a scale of 1-1000 with detailed explanations.
 
+**IMPORTANT: Use precise, non-round scores like 347, 628, 754, 891, 573, etc. Avoid scores ending in 0 or 5.**
+
 **IMPORTANT: Respond ONLY in valid JSON format with this exact structure:**
 
 ```json
 {
   "git_rating": {
-    "score": 750,
+    "score": 628,
     "reasoning": [
       "Bullet point 1 with specific example",
-      "Bullet point 2 with specific example",
+      "Bullet point 2 with specific example", 
       "Bullet point 3 with areas for improvement if score < 800"
     ]
   },
   "resume_rating": {
-    "score": 850,
+    "score": 743,
     "reasoning": [
       "Bullet point 1 with specific example from resume",
       "Bullet point 2 with specific example from resume",
@@ -21,7 +23,7 @@ You are an expert technical recruiter and developer evaluator. Based on the prov
     ]
   },
   "overall_rating": {
-    "score": 800,
+    "score": 684,
     "reasoning": [
       "Bullet point 1 combining both GitHub and resume analysis",
       "Bullet point 2 about overall professional readiness",
@@ -38,5 +40,14 @@ You are an expert technical recruiter and developer evaluator. Based on the prov
 2. **resume_rating (1-1000)**: Evaluate technical skills listed, work experience relevance, education background, project descriptions, achievements, career progression, and professional presentation.
 
 3. **overall_rating (1-1000)**: Combine both GitHub and resume analysis to assess overall professional readiness, technical competency, and hiring potential.
+
+**Scoring Guidelines:**
+- **Exceptional (850-999)**: Industry-leading expertise, significant contributions
+- **Advanced (700-849)**: Strong professional skills, solid experience  
+- **Intermediate (550-699)**: Good foundation, decent experience
+- **Beginner (400-549)**: Basic skills, limited experience
+- **Entry-level (1-399)**: Just starting, needs development
+
+**Use specific scores like: 347, 628, 754, 891, 573, 462, 739, 816, 294, 657, etc.**
 
 **Response must be valid JSON only - no additional text, markdown, or explanations outside the JSON structure.**

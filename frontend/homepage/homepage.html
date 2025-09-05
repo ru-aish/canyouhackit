@@ -37,7 +37,7 @@
     <main class="container mx-auto px-6 py-12">
         <!-- Player Card Section -->
         <section class="mb-20 flex justify-center">
-            <div id="player-profile-card" class="player-card bg-gray-800/90 border border-gray-700 shadow-2xl rounded-2xl p-8 w-full max-w-5xl transition-all duration-300">
+            <div id="player-profile-card" class="player-card bg-gray-800/90 border border-gray-700 shadow-2xl rounded-2xl p-8 w-full max-w-7xl transition-all duration-300">
                 <div class="player-card-content">
                     <div class="flex flex-col sm:flex-row justify-between items-start gap-6">
                         <div class="flex flex-col sm:flex-row items-center gap-10">
@@ -53,14 +53,37 @@
                         
                         <div class="flex flex-col gap-4 self-center sm:self-start">
                             <!-- Availability Toggle -->
-                            <div class="flex items-center space-x-3 bg-gray-900/50 border border-gray-700 px-4 py-2 rounded-lg">
+                            <div class="flex items-center justify-between bg-gray-900/50 border border-gray-700 px-4 py-2 rounded-lg">
                                 <label for="availability-toggle" class="font-semibold text-gray-300 select-none cursor-pointer">Available</label>
                                 <input type="checkbox" id="availability-toggle" class="h-5 w-5 rounded border-gray-600 bg-gray-700 text-green-500 focus:ring-green-500 focus:ring-offset-gray-800 cursor-pointer">
                             </div>
                             
-                            <!-- Rating Display (Populated by home.js) -->
-                            <div id="rating-container" class="w-full md:w-auto flex-shrink-0">
-                                <!-- This will be populated by JS -->
+                            <!-- Rating Display -->
+                            <div id="rating-display" class="rating-display-container">
+                                <div class="flex items-center gap-6">
+                                    <!-- Circular Progress -->
+                                    <div class="rating-circle-container">
+                                        <svg class="rating-circle" width="120" height="120" viewBox="0 0 120 120">
+                                            <circle class="rating-circle-bg" cx="60" cy="60" r="50" stroke-width="6"/>
+                                            <circle class="rating-circle-fg" cx="60" cy="60" r="50" stroke-width="6" 
+                                                    stroke-dasharray="314" stroke-dashoffset="314" id="progress-circle"/>
+                                        </svg>
+                                        <div class="rating-text">
+                                            <span id="overall-score">700</span>
+                                            <span class="small">Overall</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Score Breakdown -->
+                                    <div class="rating-breakdown">
+                                        <div class="rating-item text-gray-300">
+                                            GitHub Score: <span id="github-score" class="score-badge">600</span>
+                                        </div>
+                                        <div class="rating-item text-gray-300">
+                                            Resume Score: <span id="resume-score" class="score-badge">750</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -78,6 +101,14 @@
                                 Dummy Skill 3
                             </span>
                         </div>
+                    </div>
+
+                    <!-- Submit Profile Button -->
+                    <div class="mt-8 flex justify-center">
+                        <button id="submit-profile-btn" class="submit-profile-button">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                            Submit Profile for Rating
+                        </button>
                     </div>
                 </div>
             </div>

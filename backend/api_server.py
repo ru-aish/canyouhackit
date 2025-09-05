@@ -9,6 +9,7 @@ from PyPDF2 import PdfReader
 import requests
 from bs4 import BeautifulSoup
 import re
+import sqlite3
 
 app = Flask(__name__)
 CORS(app)
@@ -1216,6 +1217,51 @@ def internal_error(error):
     """Handle 500 errors"""
     return jsonify({"success": False, "message": "Internal server error"}), 500
 
+
+@app.route('/api/get-ratings', methods=['GET'])
+def get_ratings():
+    try:
+        # Get user_id from query parameters (optional for now)
+        user_id = request.args.get('user_id', None)
+        
+        conn = sqlite3.connect('database/database.db')
+        cursor = conn.cursor()
+        
+        if user_id:
+            # Get ratings for specific user
+            cursor.execute("""
+                SELECT overall_score, git_score, resume_score 
+                FROM user_ratings 
+                WHERE user_id = ? 
+                ORDER BY uid DESC 
+                LIMIT 1
+            """, (user_id,))
+        else:
+            # Get the latest rating (fallback)
+            cursor.execute("""
+                SELECT overall_score, git_score, resume_score 
+                FROM user_ratings 
+                ORDER BY uid DESC 
+                LIMIT 1
+            """)
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            return jsonify({
+                'success': True,
+                'ratings': {
+                    'overall_score': result[0],
+                    'git_score': result[1],
+                    'resume_score': result[2]
+                }
+            })
+        else:
+            return jsonify({'success': False, 'message': 'No ratings found'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
 if __name__ == '__main__':
     if initialize_app():
