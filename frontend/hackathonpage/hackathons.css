@@ -1,6 +1,6 @@
 .event-card.selected {
-    border-color: #3b82f6; /* Tailwind's blue-500 */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* A slightly larger shadow */
+    border-color: #6366f1; /* Tailwind's indigo-500 */
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); /* A subtle glow effect for the dark theme */
 }
 
 .event-card.selected .options-container {
