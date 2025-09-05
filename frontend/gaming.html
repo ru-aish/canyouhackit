@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esports Tournaments</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .event-card.selected {
+            border-color: #6366f1; /* indigo-500 */
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+        .event-card.selected .options-container {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300">
+
+    <div class="container mx-auto px-4 py-12">
+        <!-- Header Section -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-white">Choose Your Arena</h1>
+            <p class="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">These are some of the most popular esports tournaments happening now.</p>
+        </header>
+
+        <!-- Events Grid -->
+        <div id="event-grid" class="grid grid-cols-1 gap-8 max-w-xl mx-auto">
+ 
+            <!-- Card 1: Valorant Champions Tour -->
+            <div class="event-card bg-gray-800 rounded-xl shadow-lg overflow-hidden cursor-pointer border-2 border-transparent transition-all duration-300 ease-in-out hover:shadow-2xl hover:border-indigo-500" data-event="Valorant Champions Tour" data-info-url="https://valorantesports.com/">
+                <div class="p-4">
+                    <img src="1200px-VALORANT_Champions_Tour_2025_allmode.png" alt="Valorant Champions Tour" class="w-full h-full object-cover rounded-lg">
+                </div>
+                <div class="p-6 pt-0">
+                    <h2 class="text-xl font-bold text-white mb-2">Valorant Champions Tour (VCT)</h2>
+                    <p class="text-gray-400 text-sm">The official global circuit for professional Valorant. The pinnacle of competitive play.</p>
+                    
+                    <!-- Options Container -->
+                    <div class="options-container hidden mt-4">
+                        <button class="option-btn btn-info w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-indigo-700 transition-all duration-300 mb-2">
+                            Get More Info
+                        </button>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="option-btn btn-teams w-full bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-300">
+                                Look for Teams
+                            </button>
+                            <button class="option-btn btn-people w-full bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-300">
+                                Look for People
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: BGMI India Series -->
+            <div class="event-card bg-gray-800 rounded-xl shadow-lg overflow-hidden cursor-pointer border-2 border-transparent transition-all duration-300 ease-in-out hover:shadow-2xl hover:border-indigo-500" data-event="BGMI India Series" data-info-url="https://esports.battlegroundsmobileindia.com/">
+                <div class="p-4">
+                    <img src="d5cab-17346937308464-1920.jpg" alt="Battlegrounds Mobile India Series"object-cover rounded-lg">
+                </div>
+                <div class="p-6 pt-0">
+                    <h2 class="text-xl font-bold text-white mb-2">Battlegrounds Mobile India Series (BGIS)</h2>
+                    <p class="text-gray-400 text-sm">The biggest official BGMI tournament in India, featuring teams from all over the country.</p>
+                   
+                    <!-- Options Container -->
+                    <div class="options-container hidden mt-4">
+                        <button class="option-btn btn-info w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-indigo-700 transition-all duration-300 mb-2">
+                            Get More Info
+                        </button>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="option-btn btn-teams w-full bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-300">
+                                Look for Teams
+                            </button>
+                            <button class="option-btn btn-people w-full bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition-all duration-300">
+                                Look for People
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+      
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const eventGrid = document.getElementById('event-grid');
+
+            eventGrid.addEventListener('click', (e) => {
+                const card = e.target.closest('.event-card');
+                if (!card) return;
+
+                const button = e.target.closest('.option-btn');
+                const eventName = card.dataset.event;
+                const infoUrl = card.dataset.infoUrl;
+
+                if (button) {
+                    e.stopPropagation();
+                    if (button.classList.contains('btn-info')) {
+                        if (infoUrl) {
+                            window.open(infoUrl, '_blank');
+                        } else {
+                            window.open(`https://www.google.com/search?q=${encodeURIComponent(eventName)}`, '_blank');
+                        }
+                    } else if (button.classList.contains('btn-teams')) {
+                        alert(`Looking for teams for: ${eventName}`);
+                    } else if (button.classList.contains('btn-people')) {
+                        window.location.href = 'create_team.html';
+                    }
+                    return;
+                }
+
+                const isSelected = card.classList.contains('selected');
+                
+                document.querySelectorAll('.event-card').forEach(c => {
+                    c.classList.remove('selected');
+                });
+
+                if (!isSelected) {
+                    card.classList.add('selected');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
