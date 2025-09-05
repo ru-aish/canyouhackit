@@ -414,6 +414,210 @@ def search_teams():
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to search teams: {str(e)}"}), 500
 
+# Hackathon Management Endpoints
+
+@app.route('/api/hackathons', methods=['GET'])
+def get_hackathons():
+    """Get all hackathons"""
+    try:
+        status = request.args.get('status')  # active, upcoming, completed
+        
+        # Build query
+        query = "SELECT * FROM hackathons"
+        params = []
+        
+        if status:
+            query += " WHERE status = ?"
+            params.append(status)
+        
+        query += " ORDER BY created_at DESC"
+        
+        cursor = db_manager.connection.execute(query, params)
+        hackathons = cursor.fetchall()
+        
+        # Convert to list of dictionaries
+        hackathon_list = []
+        for row in hackathons:
+            hackathon = dict(row)
+            # Parse JSON fields
+            if hackathon.get('prizes'):
+                try:
+                    hackathon['prizes'] = json.loads(hackathon['prizes'])
+                except:
+                    hackathon['prizes'] = {}
+            hackathon_list.append(hackathon)
+        
+        return jsonify({
+            "success": True,
+            "hackathons": hackathon_list,
+            "count": len(hackathon_list)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to get hackathons: {str(e)}"}), 500
+
+@app.route('/api/hackathons/<int:hackathon_id>', methods=['GET'])
+def get_hackathon(hackathon_id):
+    """Get hackathon by ID"""
+    try:
+        cursor = db_manager.connection.execute(
+            "SELECT * FROM hackathons WHERE hackathon_id = ?", 
+            (hackathon_id,)
+        )
+        row = cursor.fetchone()
+        
+        if not row:
+            return jsonify({"success": False, "message": "Hackathon not found"}), 404
+        
+        hackathon = dict(row)
+        # Parse JSON fields
+        if hackathon.get('prizes'):
+            try:
+                hackathon['prizes'] = json.loads(hackathon['prizes'])
+            except:
+                hackathon['prizes'] = {}
+        
+        return jsonify({
+            "success": True,
+            "hackathon": hackathon
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to get hackathon: {str(e)}"}), 500
+
+# Team Request Endpoints
+
+@app.route('/api/team-requests', methods=['POST'])
+def create_team_request():
+    """Create a new team request"""
+    try:
+        data = request.get_json()
+        
+        # Extract required fields
+        hackathon_id = data.get('hackathon_id')
+        user_email = data.get('user_email', '').strip()
+        message = data.get('message', '').strip()
+        
+        # Validate required fields
+        if not all([hackathon_id, user_email, message]):
+            return jsonify({"success": False, "message": "Hackathon ID, email, and message are required"}), 400
+        
+        # Check if hackathon exists
+        cursor = db_manager.connection.execute(
+            "SELECT hackathon_id FROM hackathons WHERE hackathon_id = ?", 
+            (hackathon_id,)
+        )
+        if not cursor.fetchone():
+            return jsonify({"success": False, "message": "Hackathon not found"}), 404
+        
+        # Check if user already submitted request for this hackathon
+        cursor = db_manager.connection.execute(
+            "SELECT request_id FROM team_requests WHERE hackathon_id = ? AND user_email = ?",
+            (hackathon_id, user_email)
+        )
+        if cursor.fetchone():
+            return jsonify({"success": False, "message": "You have already submitted a request for this hackathon"}), 400
+        
+        # Insert team request
+        cursor = db_manager.connection.execute(
+            """INSERT INTO team_requests (hackathon_id, user_email, message, status, created_at, updated_at)
+               VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))""",
+            (hackathon_id, user_email, message)
+        )
+        db_manager.connection.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Team request submitted successfully",
+            "request_id": cursor.lastrowid
+        }), 201
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to create team request: {str(e)}"}), 500
+
+@app.route('/api/team-requests/check', methods=['GET'])
+def check_team_request():
+    """Check if user already submitted request for a hackathon"""
+    try:
+        hackathon_id = request.args.get('hackathon_id')
+        user_email = request.args.get('email', '').strip()
+        
+        if not hackathon_id or not user_email:
+            return jsonify({"success": False, "message": "Hackathon ID and email are required"}), 400
+        
+        cursor = db_manager.connection.execute(
+            "SELECT request_id, status, created_at FROM team_requests WHERE hackathon_id = ? AND user_email = ?",
+            (hackathon_id, user_email)
+        )
+        row = cursor.fetchone()
+        
+        if row:
+            return jsonify({
+                "success": True,
+                "exists": True,
+                "request": {
+                    "request_id": row[0],
+                    "status": row[1],
+                    "created_at": row[2]
+                }
+            }), 200
+        else:
+            return jsonify({
+                "success": True,
+                "exists": False
+            }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to check team request: {str(e)}"}), 500
+
+@app.route('/api/team-requests', methods=['GET'])
+def get_team_requests():
+    """Get team requests with optional filters"""
+    try:
+        hackathon_id = request.args.get('hackathon_id')
+        status = request.args.get('status')
+        user_email = request.args.get('email')
+        
+        # Build query
+        query = """
+            SELECT tr.*, h.name as hackathon_name 
+            FROM team_requests tr 
+            JOIN hackathons h ON tr.hackathon_id = h.hackathon_id 
+            WHERE 1=1
+        """
+        params = []
+        
+        if hackathon_id:
+            query += " AND tr.hackathon_id = ?"
+            params.append(hackathon_id)
+        
+        if status:
+            query += " AND tr.status = ?"
+            params.append(status)
+            
+        if user_email:
+            query += " AND tr.user_email = ?"
+            params.append(user_email)
+        
+        query += " ORDER BY tr.created_at DESC"
+        
+        cursor = db_manager.connection.execute(query, params)
+        requests = cursor.fetchall()
+        
+        # Convert to list of dictionaries
+        request_list = []
+        for row in requests:
+            request_list.append(dict(row))
+        
+        return jsonify({
+            "success": True,
+            "requests": request_list,
+            "count": len(request_list)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to get team requests: {str(e)}"}), 500
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
@@ -451,6 +655,11 @@ if __name__ == '__main__':
         print("  POST /api/teams/<id>/leave - Leave team")
         print("  PUT /api/teams/<id> - Update team")
         print("  GET /api/teams/search - Search teams")
+        print("  GET /api/hackathons - Get all hackathons")
+        print("  GET /api/hackathons/<id> - Get hackathon by ID")
+        print("  POST /api/team-requests - Create team request")
+        print("  GET /api/team-requests/check - Check if user already applied")
+        print("  GET /api/team-requests - Get team requests")
         print("  GET /health - Health check")
         app.run(host='0.0.0.0', port=5000, debug=True)
     else:

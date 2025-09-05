@@ -1,0 +1,16 @@
+
+<!DOCTYPE html>
+<html>
+<head><title>URL Test</title></head>
+<body>
+<h1>URL Parameter Test</h1>
+<p>Current URL: <span id='url'></span></p>
+<p>Event Parameter: <span id='event'></span></p>
+<script>
+document.getElementById('url').textContent = window.location.href;
+const urlParams = new URLSearchParams(window.location.search);
+document.getElementById('event').textContent = urlParams.get('event') || 'NOT FOUND';
+</script>
+</body>
+</html>
+
