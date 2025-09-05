@@ -5,6 +5,9 @@ import json
 import base64
 import io
 from PyPDF2 import PdfReader
+import requests
+from bs4 import BeautifulSoup
+import re
 
 app = Flask(__name__)
 CORS(app)
@@ -46,6 +49,268 @@ def extract_text_from_pdf_base64(base64_data):
     except Exception as e:
         print(f"Error extracting text from PDF: {e}")
         return f"[PDF TEXT EXTRACTION FAILED: {str(e)}]"
+
+
+class GithubScraper:
+    """
+    Scrapes a GitHub profile to extract data for technical evaluation based on raw HTML.
+    This version is improved to handle asynchronously loaded content like the contribution graph.
+    """
+
+    def __init__(self, username):
+        self.username = username
+        self.base_url = f"https://github.com/{username}"
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+
+    def _get_soup(self, url):
+        """Fetches and parses HTML content from a URL."""
+        try:
+            response = requests.get(url, headers=self.headers)
+            response.raise_for_status()
+            return BeautifulSoup(response.text, 'html.parser')
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching {url}: {e}")
+            return None
+
+    def scrape_profile(self):
+        """Main method to orchestrate the scraping process."""
+        print(f"Starting scrape for user: {self.username}...")
+        main_page_soup = self._get_soup(self.base_url)
+        if not main_page_soup:
+            return None
+
+        profile_info = self._extract_profile_info(main_page_soup)
+
+        # Asynchronously loaded contribution data
+        contribution_stats = self._extract_contribution_stats(main_page_soup)
+
+        pinned_repos_data = self._extract_pinned_repos(main_page_soup)
+
+        analyzed_repositories = []
+        if pinned_repos_data:
+            print(
+                f"Found {len(pinned_repos_data)} pinned repositories. Analyzing each...")
+            for repo in pinned_repos_data:
+                repo_details = self._scrape_repo_details(repo['url'])
+                if repo_details:
+                    repo.update(repo_details)
+                    analyzed_repositories.append(repo)
+
+        print("Scraping complete.")
+        return {
+            "profileInfo": profile_info,
+            "contributionStats": contribution_stats,
+            "analyzedRepositories": analyzed_repositories
+        }
+
+    def _extract_profile_info(self, soup):
+        """Extracts user's full name and bio using more stable selectors."""
+        name_tag = soup.find('span', itemprop='name')
+        bio_tag = soup.find('div', class_='user-profile-bio')
+        return {
+            "fullName": name_tag.get_text(strip=True) if name_tag else "N/A",
+            "bio": bio_tag.get_text(strip=True) if bio_tag else "N/A"
+        }
+
+    def _extract_contribution_stats(self, soup):
+        """
+        Finds the include-fragment for the contribution graph and scrapes it.
+        This is more reliable as the graph is loaded asynchronously.
+        """
+        # The main page has a placeholder that loads the contribution graph
+        contrib_fragment = soup.find(
+            'include-fragment', src=re.compile(r'/users/.*/contributions'))
+        if not contrib_fragment:
+            # Fallback for older page structures
+            day_rects_main = soup.find_all(
+                'rect', class_='ContributionCalendar-day')
+            if day_rects_main:
+                active_days = sum(1 for day in day_rects_main if day.get(
+                    'data-level') and int(day['data-level']) > 0)
+                return {"totalContributionDaysInLastYear": active_days}
+            return {"totalContributionDaysInLastYear": "Could not load"}
+
+        contributions_url = f"https://github.com{contrib_fragment['src']}"
+        contrib_soup = self._get_soup(contributions_url)
+        if not contrib_soup:
+            return {"totalContributionDaysInLastYear": "Could not load"}
+
+        # Extract the total from the text, e.g., "53 contributions in the last year"
+        h2_text = contrib_soup.find('h2', class_='f4').get_text(
+            strip=True) if contrib_soup.find('h2', class_='f4') else ''
+        match = re.search(r'(\d+,\d+|\d+)\s+contributions', h2_text)
+        if match:
+            total_contributions = int(match.group(1).replace(',', ''))
+            return {"totalContributionsInLastYear": total_contributions}
+
+        # Fallback to counting days if the total isn't found
+        day_rects = contrib_soup.find_all(
+            'rect', class_='ContributionCalendar-day')
+        active_days = sum(1 for day in day_rects if day.get(
+            'data-level') and int(day['data-level']) > 0)
+        return {"totalContributionDaysInLastYear": active_days}
+
+    def _extract_pinned_repos(self, soup):
+        """Extracts basic info from pinned repositories."""
+        pinned_section = soup.find(
+            'div', class_='js-pinned-items-reorder-container')
+        if not pinned_section:
+            return []
+
+        repos = []
+        # The selector for pinned items is more reliable targeting the Box element
+        pinned_items = pinned_section.find_all('div', class_='Box')
+        for item in pinned_items:
+            repo_link = item.find(
+                'a', {'data-view-component': 'true'}, href=True)
+            if not repo_link or not repo_link.find('span', class_='repo'):
+                continue
+
+            repo_url = f"https://github.com{repo_link['href']}"
+            name = repo_link.find('span', class_='repo').get_text(strip=True)
+            desc_tag = item.find('p', class_='pinned-item-desc')
+            lang_tag = item.find('span', itemprop='programmingLanguage')
+            star_tag = item.find('a', href=f"{repo_link['href']}/stargazers")
+            
+            # Parse star count, handling 'k' notation
+            stars = 0
+            if star_tag:
+                star_text = star_tag.get_text(strip=True).replace(',', '')
+                if 'k' in star_text.lower():
+                    stars = int(float(star_text.lower().replace('k', '')) * 1000)
+                elif star_text.isdigit():
+                    stars = int(star_text)
+
+            repos.append({
+                "name": name,
+                "url": repo_url,
+                "description": desc_tag.get_text(strip=True) if desc_tag else "N/A",
+                "primaryLanguage": lang_tag.get_text(strip=True) if lang_tag else "N/A",
+                "stars": stars
+            })
+        return repos
+
+    def _scrape_repo_details(self, repo_url):
+        """Scrapes detailed information from a single repository page."""
+        soup = self._get_soup(repo_url)
+        if not soup:
+            return None
+
+        readme_div = soup.find('div', id='readme')
+        readme_content = readme_div.get_text() if readme_div else None
+
+        # A more reliable way to find the license is to look for a link to a license file
+        license_link = soup.find('a', href=re.compile(
+            r'/blob/main/LICENSE', re.IGNORECASE))
+
+        return {
+            "readme": {
+                "exists": bool(readme_content),
+                "contentLength": len(readme_content) if readme_content else 0
+            },
+            "qualityFlags": {
+                "hasLicense": bool(license_link)
+            }
+        }
+
+
+class HighlightGenerator:
+    """
+    Takes raw scraped GitHub data and formats it into a human-readable
+    highlights report for evaluation.
+    """
+
+    def __init__(self, github_data):
+        self.data = github_data
+
+    def generate_report(self):
+        """Creates the full text report."""
+        profile_info = self.data.get('profileInfo', {})
+        username = profile_info.get(
+            'fullName') or self.data.get('username', 'N/A')
+        report_lines = []
+
+        report_lines.append("\n" + "="*50)
+        report_lines.append(f"      GITHUB PROFILE HIGHLIGHTS for {username}")
+        report_lines.append("="*50)
+
+        # Work Ethic & Consistency
+        contrib_stats = self.data.get('contributionStats', {})
+        contributions = contrib_stats.get('totalContributionsInLastYear') or contrib_stats.get(
+            'totalContributionDaysInLastYear', 0)
+        contrib_type = "Total Contributions" if 'totalContributionsInLastYear' in contrib_stats else "Active Days"
+        report_lines.append("\n**1. Work Ethic & Consistency:**")
+        report_lines.append(
+            f"* **Activity (Last Year):** {contributions} ({contrib_type}).")
+
+        # Project Analysis
+        repos = self.data.get('analyzedRepositories', [])
+        report_lines.append("\n**2. Project Details (Pinned Repositories):**")
+
+        if not repos:
+            report_lines.append("* No pinned repositories found.")
+        else:
+            total_stars = 0
+            documented_repos_count = 0
+            non_trivial_projects = []
+
+            for repo in repos:
+                total_stars += repo.get('stars', 0)
+                if repo.get('readme', {}).get('exists'):
+                    documented_repos_count += 1
+                if "solution" not in repo['name'].lower() and "leetcode" not in repo['name'].lower():
+                    non_trivial_projects.append(
+                        f"{repo['name']} ({repo.get('primaryLanguage', 'N/A')})")
+
+                report_lines.append(f"* **{repo.get('name', 'N/A')}:**")
+                report_lines.append(
+                    f"  - **Description:** {repo.get('description', 'N/A')}")
+                report_lines.append(f"  - **Stars:** {repo.get('stars', 0)}")
+                report_lines.append(
+                    f"  - **README:** {'Exists' if repo.get('readme', {}).get('exists') else 'MISSING'}")
+
+        # Key Takeaways for AI Prompt
+        report_lines.append("\n" + "="*50)
+        report_lines.append("      KEY DATA POINTS FOR SCORING")
+        report_lines.append("="*50)
+
+        report_lines.append(f"* **IMPACT (Community Validation):**")
+        report_lines.append(f"  - Total Stars on Pinned Repos: {total_stars}")
+
+        report_lines.append(f"\n* **COMPLEXITY (Project Types):**")
+        if non_trivial_projects:
+            report_lines.append(
+                f"  - Non-trivial projects identified: {', '.join(non_trivial_projects)}")
+        else:
+            report_lines.append(
+                "  - Projects appear to be primarily foundational or solution-based.")
+
+        report_lines.append(f"\n* **DOCUMENTATION (Professionalism):**")
+        report_lines.append(
+            f"  - README files exist for {documented_repos_count} out of {len(repos)} pinned repositories.")
+
+        report_lines.append("\n" + "="*50)
+
+        return "\n".join(report_lines)
+
+
+def get_github_score(github_username):
+    """Get GitHub profile analysis for scoring"""
+    try:
+        scraper = GithubScraper(github_username)
+        github_data = scraper.scrape_profile()
+        
+        if github_data:
+            reporter = HighlightGenerator(github_data)
+            return reporter.generate_report()
+        return "Could not analyze GitHub profile"
+    except Exception as e:
+        print(f"Error analyzing GitHub profile: {e}")
+        return f"GitHub analysis failed: {str(e)}"
 
 
 def initialize_app():
@@ -616,7 +881,7 @@ def get_hackathon(hackathon_id):
 
 @app.route('/api/rate-profile', methods=['POST'])
 def rate_profile():
-    """Store user resume and GitHub data in database"""
+    """Store user resume and GitHub data in database with real GitHub analysis"""
     try:
         data = request.get_json()
 
@@ -635,7 +900,12 @@ def rate_profile():
         resume_text = extract_text_from_pdf_base64(resume_base64)
         print(f"Extracted {len(resume_text)} characters from PDF")
 
-        # Store in database only - no AI processing
+        # Analyze GitHub profile
+        print(f"Analyzing GitHub profile for: {github_username}")
+        github_analysis = get_github_score(github_username)
+        print(f"GitHub analysis completed: {len(github_analysis)} characters")
+
+        # Store in database with GitHub analysis
         try:
             # If no user_id provided, we'll use a default value for anonymous users
             if user_id is None:
@@ -669,24 +939,24 @@ def rate_profile():
             existing_record = cursor.fetchone()
 
             if existing_record:
-                # Update existing record
+                # Update existing record with GitHub analysis
                 cursor = db_manager.connection.execute(
                     """UPDATE user_ratings 
-                       SET resume_data = ?, github_link = ?, updated_at = datetime('now')
+                       SET resume_data = ?, github_link = ?, github_analysis = ?, updated_at = datetime('now')
                        WHERE user_id = ?""",
-                    (resume_text, github_username, user_id)
+                    (resume_text, github_username, github_analysis, user_id)
                 )
                 db_manager.connection.commit()
                 rating_id = existing_record[0]
                 print(
                     f"Successfully updated existing resume data with ID: {rating_id}")
             else:
-                # Insert new record
+                # Insert new record with GitHub analysis
                 cursor = db_manager.connection.execute(
                     """INSERT INTO user_ratings 
-                       (user_id, resume_data, github_link, git_score, resume_score, overall_score, created_at, updated_at)
-                       VALUES (?, ?, ?, 0, 0, 0, datetime('now'), datetime('now'))""",
-                    (user_id, resume_text, github_username)
+                       (user_id, resume_data, github_link, github_analysis, git_score, resume_score, overall_score, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, 0, 0, 0, datetime('now'), datetime('now'))""",
+                    (user_id, resume_text, github_username, github_analysis)
                 )
                 db_manager.connection.commit()
                 rating_id = cursor.lastrowid
@@ -695,8 +965,9 @@ def rate_profile():
 
             return jsonify({
                 "success": True,
-                "message": "Resume and GitHub data stored successfully",
-                "rating_id": rating_id
+                "message": "Your profile data has been saved. You can update your profile or resume anytime by submitting again",
+                "rating_id": rating_id,
+                "github_analysis_preview": github_analysis[:200] + "..." if len(github_analysis) > 200 else github_analysis
             }), 200
 
         except Exception as db_error:
