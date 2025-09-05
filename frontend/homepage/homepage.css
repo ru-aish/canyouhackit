@@ -1,0 +1,237 @@
+/* Custom styles for the homepage */
+
+/* Additional styles to complement the existing home_style.css */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Player card enhancements */
+.player-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.player-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.player-card:hover::before {
+    opacity: 1;
+}
+
+/* Avatar container styling */
+.avatar-container {
+    position: relative;
+}
+
+.avatar-container::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    background: linear-gradient(45deg, #6366f1, #a855f7, #ec4899, #f59e0b);
+    border-radius: 50%;
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+.avatar-container:hover::after {
+    opacity: 0.3;
+}
+
+/* Skill pill animations */
+.skill-pill {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.skill-pill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.skill-pill:hover::before {
+    left: 100%;
+}
+
+.skill-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Domain card enhancements */
+.domain-card {
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.domain-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.domain-card:hover::before {
+    opacity: 1;
+}
+
+/* Image placeholder enhancements */
+.image-placeholder {
+    position: relative;
+    overflow: hidden;
+}
+
+.image-placeholder i {
+    transition: transform 0.3s ease;
+}
+
+.domain-card:hover .image-placeholder i {
+    transform: scale(1.1);
+}
+
+/* Navigation link styling */
+.nav-link {
+    position: relative;
+    padding: 0.5rem 0;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #a855f7, #ec4899);
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+/* Logout button enhancements */
+#logout-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+#logout-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease;
+}
+
+#logout-btn:hover::before {
+    width: 200px;
+    height: 200px;
+}
+
+/* Availability toggle styling */
+#availability-toggle:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+#availability-toggle:checked + label {
+    color: #10b981;
+}
+
+/* Responsive enhancements */
+@media (max-width: 768px) {
+    .player-card {
+        padding: 1.5rem;
+    }
+    
+    .avatar-container svg {
+        width: 5rem;
+        height: 5rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .domain-card {
+        transform: none !important;
+    }
+    
+    .domain-card:hover {
+        transform: none !important;
+    }
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #ffffff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Focus styles for accessibility */
+*:focus {
+    outline: 2px solid #a855f7;
+    outline-offset: 2px;
+}
+
+button:focus,
+input:focus,
+a:focus {
+    outline: 2px solid #a855f7;
+    outline-offset: 2px;
+}
