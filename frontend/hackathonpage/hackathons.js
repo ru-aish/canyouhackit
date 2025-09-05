@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (button.classList.contains('btn-teams')) {
                 alert(`Looking for teams for: ${eventName}`);
             } else if (button.classList.contains('btn-people')) {
-                // Navigates to the create team page
                 window.location.href = 'createateam.html';
             }
             return;
@@ -28,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isSelected = card.classList.contains('selected');
         
-        document.querySelectorAll('.event--card').forEach(c => {
+        // This line is now corrected to use '.event-card'
+        document.querySelectorAll('.event-card').forEach(c => {
             c.classList.remove('selected');
         });
 
@@ -37,3 +37,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
