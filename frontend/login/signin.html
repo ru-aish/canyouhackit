@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | TeamUp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="signin.css">
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-md mx-auto p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-10 relative overflow-hidden">
+            <!-- Header with Logo -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center bg-indigo-600 w-16 h-16 rounded-full mb-4">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21v-1a6 6 0 00-5.197-5.977M9 21v-1a6 6 0 016-6 6 6 0 016 6v1z"></path></svg>
+                </div>
+                <h1 class="text-3xl font-bold text-white">Welcome back</h1>
+                <p class="text-gray-400 mt-2">Sign in to your TeamUp account</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-6">
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block mb-2 text-sm font-medium text-gray-300">
+                        Email Address
+                    </label>
+                    <input type="email" id="email" name="email" 
+                        class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4 placeholder-gray-400"
+                        placeholder="your.email@example.com" required>
+                    <p id="email-error" class="text-red-400 text-sm mt-2 hidden">
+                        Please enter a valid email address.
+                    </p>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block mb-2 text-sm font-medium text-gray-300">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="password" name="password"
+                            class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4 placeholder-gray-400 pr-12"
+                            placeholder="Enter your password" required>
+                        <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <svg id="eye-icon" class="w-5 h-5 text-gray-400 hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="password-error" class="text-red-400 text-sm mt-2 hidden">
+                        Please enter your password.
+                    </p>
+                </div>
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember-me" name="remember-me" type="checkbox" 
+                            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 bg-gray-700 rounded">
+                        <label for="remember-me" class="ml-2 block text-sm text-gray-300">
+                            Remember me
+                        </label>
+                    </div>
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-indigo-400 hover:text-indigo-300">
+                            Forgot your password?
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="signin-btn" 
+                    class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="signin-text">Sign In</span>
+                    <div id="signin-loading" class="hidden">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Signing in...
+                    </div>
+                </button>
+
+                <!-- Error Message -->
+                <div id="login-error" class="text-red-400 text-sm text-center hidden">
+                    <!-- Error message will be displayed here -->
+                </div>
+
+                <!-- Success Message -->
+                <div id="login-success" class="text-green-400 text-sm text-center hidden">
+                    Login successful! Redirecting to your profile...
+                </div>
+            </form>
+
+            <!-- Divider -->
+            <div class="mt-8">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-700"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-gray-800 text-gray-400">Don't have an account?</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Register Link -->
+            <div class="mt-6">
+                <a href="../registration/login.html" 
+                    class="w-full flex justify-center py-3 px-4 border border-gray-600 rounded-lg shadow-sm bg-gray-700 text-sm font-medium text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200">
+                    Create new account
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script src="signin.js" defer></script>
+</body>
+</html>

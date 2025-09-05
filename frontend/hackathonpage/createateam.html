@@ -82,6 +82,96 @@
     </main>
 
     <script>
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Helper function to get user from localStorage or session
+        function getCurrentUser() {
+            // Check both localStorage and sessionStorage for user session (from login system)
+            const sessionData = localStorage.getItem('userSession') || sessionStorage.getItem('userSession');
+            
+            if (sessionData) {
+                try {
+                    const session = JSON.parse(sessionData);
+                    const loginTime = new Date(session.loginTime);
+                    const now = new Date();
+                    const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+                    
+                    // Check if session is still valid (within 24 hours for localStorage, always valid for sessionStorage)
+                    const isLocalStorage = localStorage.getItem('userSession');
+                    if (!isLocalStorage || hoursSinceLogin < 24) {
+                        return {
+                            user_id: session.userId,
+                            email: session.email,
+                            name: session.name
+                        };
+                    } else {
+                        // Session expired, clear it
+                        localStorage.removeItem('userSession');
+                        return null;
+                    }
+                } catch (error) {
+                    console.error('Error parsing session data:', error);
+                    localStorage.removeItem('userSession');
+                    sessionStorage.removeItem('userSession');
+                    return null;
+                }
+            }
+            
+            return null;
+        }
+
+        // Helper function to show loading state
+        function setLoadingState(button, isLoading) {
+            if (isLoading) {
+                button.disabled = true;
+                button.dataset.originalText = button.textContent;
+                button.innerHTML = `
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating Team...
+                `;
+            } else {
+                button.disabled = false;
+                button.textContent = button.dataset.originalText || 'Create Team';
+            }
+        }
+
+        // Enhanced error handling
+        function showError(message) {
+            // Create a temporary error message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'bg-red-500 text-white p-4 rounded-lg mb-4 transition-opacity duration-300';
+            errorDiv.textContent = message;
+            
+            const form = document.getElementById('create-team-form');
+            form.parentNode.insertBefore(errorDiv, form);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.opacity = '0';
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            // Create a temporary success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'bg-green-500 text-white p-4 rounded-lg mb-4 transition-opacity duration-300';
+            successDiv.textContent = message;
+            
+            const form = document.getElementById('create-team-form');
+            form.parentNode.insertBefore(successDiv, form);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                successDiv.style.opacity = '0';
+                setTimeout(() => successDiv.remove(), 300);
+            }, 5000);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('create-team-form');
             const maxMembersInput = document.getElementById('max-members');
@@ -91,6 +181,31 @@
             // Set minimum date for the deadline input to today
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('team-deadline').setAttribute('min', today);
+
+            // Check if user is logged in
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
+                // Show a warning message and redirect to login
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'bg-red-500 text-white p-4 rounded-lg mb-4';
+                warningDiv.innerHTML = `
+                    <strong>⚠️ Authentication Required:</strong> You need to be logged in to create a team. 
+                    <a href="../login/signin.html" class="underline font-semibold hover:text-red-200">Click here to sign in</a>
+                `;
+                form.parentNode.insertBefore(warningDiv, form);
+                
+                // Disable the form
+                form.style.opacity = '0.5';
+                form.style.pointerEvents = 'none';
+            } else {
+                // Show logged in user info
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'bg-green-500 text-white p-4 rounded-lg mb-4';
+                infoDiv.innerHTML = `
+                    <strong>✅ Logged in as:</strong> ${currentUser.name} (${currentUser.email})
+                `;
+                form.parentNode.insertBefore(infoDiv, form);
+            }
 
             // --- Logic for the Max Members input buttons ---
             minusBtn.addEventListener('click', () => {
@@ -108,31 +223,84 @@
             });
 
             // --- Form Submission Logic ---
-            form.addEventListener('submit', (event) => {
+            form.addEventListener('submit', async (event) => {
                 event.preventDefault(); // Prevent the default form submission
 
                 // Get values from the form
                 const teamName = document.getElementById('team-name').value.trim();
                 const description = document.getElementById('team-description').value.trim();
                 const deadline = document.getElementById('team-deadline').value;
-                const members = maxMembersInput.value;
+                const members = parseInt(maxMembersInput.value);
 
                 // Basic validation
                 if (!teamName || !description || !deadline) {
-                    alert('Please fill out all required fields.');
+                    showError('Please fill out all required fields.');
                     return;
                 }
-                
-                // On success, you would typically send this data to a server
-                console.log({
-                    teamName,
-                    description,
-                    deadline,
-                    members
-                });
 
-                alert(`Team "${teamName}" has been created successfully!`);
-                form.reset(); // Clear the form
+                // Get leader_id from current user
+                const leaderId = currentUser?.user_id;
+                if (!leaderId) {
+                    showError('You must be logged in to create a team. Please sign in first.');
+                    return;
+                }
+
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                
+                try {
+                    // Show loading state
+                    setLoadingState(submitBtn, true);
+
+                    // Send data to the backend API
+                    const response = await fetch(`${API_BASE_URL}/teams`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            team_name: teamName,
+                            description: description,
+                            leader_id: leaderId,
+                            max_members: members,
+                            application_deadline: deadline
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showSuccess(`Team "${teamName}" has been created successfully! Team ID: ${result.team_id}`);
+                        
+                        // Store team info for potential use
+                        localStorage.setItem('last_created_team_id', result.team_id);
+                        
+                        // Clear the form
+                        form.reset();
+                        
+                        // Reset the max members to default
+                        maxMembersInput.value = 2;
+                        
+                        // Set today's date again
+                        document.getElementById('team-deadline').setAttribute('min', today);
+                        
+                        // Optionally redirect to team page after delay
+                        setTimeout(() => {
+                            const shouldRedirect = confirm('Would you like to view your new team?');
+                            if (shouldRedirect) {
+                                // You can implement team view page later
+                                window.location.href = `../hackathonpage/hackathons.html?team=${result.team_id}`;
+                            }
+                        }, 2000);
+                    } else {
+                        showError(`Failed to create team: ${result.message}`);
+                    }
+                } catch (error) {
+                    console.error('Error creating team:', error);
+                    showError('Failed to create team. Please check if the server is running and try again.');
+                } finally {
+                    // Remove loading state
+                    setLoadingState(submitBtn, false);
+                }
             });
         });
     </script>
