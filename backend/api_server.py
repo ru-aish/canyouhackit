@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from database import DatabaseManager, UserManager, SkillManager, SystemManager, TeamManager
+from rating_service import RatingService
 import json
 import base64
 import io
@@ -18,6 +19,7 @@ user_manager = None
 skill_manager = None
 system_manager = None
 team_manager = None
+rating_service = None
 
 
 def extract_text_from_pdf_base64(base64_data):
@@ -315,7 +317,7 @@ def get_github_score(github_username):
 
 def initialize_app():
     """Initialize the Flask app with database connections"""
-    global db_manager, user_manager, skill_manager, system_manager, team_manager
+    global db_manager, user_manager, skill_manager, system_manager, team_manager, rating_service
     try:
         db_manager = DatabaseManager()
         if not db_manager.connect():
@@ -329,6 +331,14 @@ def initialize_app():
         skill_manager = SkillManager(db_manager)
         system_manager = SystemManager(db_manager)
         team_manager = TeamManager(db_manager)
+        
+        # Initialize rating service
+        try:
+            rating_service = RatingService()
+            print("✅ Rating service initialized successfully")
+        except Exception as e:
+            print(f"⚠️ Rating service initialization failed: {e}")
+            rating_service = None
 
         print("✅ Flask app initialized successfully")
         return True
@@ -881,7 +891,7 @@ def get_hackathon(hackathon_id):
 
 @app.route('/api/rate-profile', methods=['POST'])
 def rate_profile():
-    """Store user resume and GitHub data in database with real GitHub analysis"""
+    """Store user resume and GitHub data in database with AI-generated ratings"""
     try:
         data = request.get_json()
 
@@ -900,12 +910,34 @@ def rate_profile():
         resume_text = extract_text_from_pdf_base64(resume_base64)
         print(f"Extracted {len(resume_text)} characters from PDF")
 
-        # Analyze GitHub profile
+        # Analyze GitHub profile for legacy compatibility
         print(f"Analyzing GitHub profile for: {github_username}")
-        github_analysis = get_github_score(github_username)
+        # Extract just the username for the old scraper
+        if github_username.startswith('https://github.com/'):
+            username_only = github_username.replace('https://github.com/', '').strip('/')
+        else:
+            username_only = github_username
+        github_analysis = get_github_score(username_only)
         print(f"GitHub analysis completed: {len(github_analysis)} characters")
 
-        # Store in database with GitHub analysis
+        # Generate AI ratings using Gemini
+        ai_ratings = None
+        if rating_service:
+            try:
+                print("Generating AI ratings with Gemini...")
+                # Ensure we pass a proper GitHub URL (not double URL)
+                if github_username.startswith('https://github.com/'):
+                    github_url = github_username
+                else:
+                    github_url = f"https://github.com/{github_username}"
+                
+                ai_ratings = rating_service.generate_ratings(github_url, resume_text)
+                print(f"AI ratings generated successfully: {ai_ratings}")
+            except Exception as rating_error:
+                print(f"AI rating generation failed: {rating_error}")
+                ai_ratings = None
+
+        # Store in database with ratings
         try:
             # If no user_id provided, we'll use a default value for anonymous users
             if user_id is None:
@@ -928,8 +960,17 @@ def rate_profile():
                     user_id = anonymous_user[0]
                     print(f"Using existing anonymous user with ID: {user_id}")
 
-            print(
-                f"Storing resume data: user_id={user_id}, github={github_username}")
+            print(f"Storing resume data: user_id={user_id}, github={username_only}")
+
+            # Extract scores from AI ratings
+            git_score = 0
+            resume_score = 0
+            overall_score = 0
+            
+            if ai_ratings:
+                git_score = ai_ratings.get('git_rating', {}).get('score', 0)
+                resume_score = ai_ratings.get('resume_rating', {}).get('score', 0)
+                overall_score = ai_ratings.get('overall_rating', {}).get('score', 0)
 
             # Check if user already has a rating record
             cursor = db_manager.connection.execute(
@@ -939,36 +980,53 @@ def rate_profile():
             existing_record = cursor.fetchone()
 
             if existing_record:
-                # Update existing record with GitHub analysis
+                # Update existing record with GitHub analysis and AI ratings
                 cursor = db_manager.connection.execute(
                     """UPDATE user_ratings 
-                       SET resume_data = ?, github_link = ?, github_analysis = ?, updated_at = datetime('now')
+                       SET resume_data = ?, github_link = ?, github_analysis = ?, 
+                           git_score = ?, resume_score = ?, overall_score = ?,
+                           ai_ratings_json = ?, updated_at = datetime('now')
                        WHERE user_id = ?""",
-                    (resume_text, github_username, github_analysis, user_id)
+                    (resume_text, username_only, github_analysis, 
+                     git_score, resume_score, overall_score,
+                     json.dumps(ai_ratings) if ai_ratings else None, user_id)
                 )
                 db_manager.connection.commit()
                 rating_id = existing_record[0]
-                print(
-                    f"Successfully updated existing resume data with ID: {rating_id}")
+                print(f"Successfully updated existing resume data with ID: {rating_id}")
             else:
-                # Insert new record with GitHub analysis
+                # Insert new record with GitHub analysis and AI ratings
                 cursor = db_manager.connection.execute(
                     """INSERT INTO user_ratings 
-                       (user_id, resume_data, github_link, github_analysis, git_score, resume_score, overall_score, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, 0, 0, 0, datetime('now'), datetime('now'))""",
-                    (user_id, resume_text, github_username, github_analysis)
+                       (user_id, resume_data, github_link, github_analysis, 
+                        git_score, resume_score, overall_score, ai_ratings_json, 
+                        created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))""",
+                    (user_id, resume_text, username_only, github_analysis,
+                     git_score, resume_score, overall_score, 
+                     json.dumps(ai_ratings) if ai_ratings else None)
                 )
                 db_manager.connection.commit()
                 rating_id = cursor.lastrowid
-                print(
-                    f"Successfully stored new resume data with ID: {rating_id}")
+                print(f"Successfully stored new resume data with ID: {rating_id}")
 
-            return jsonify({
+            # Prepare response
+            response_data = {
                 "success": True,
-                "message": "Your profile data has been saved. You can update your profile or resume anytime by submitting again",
+                "message": "Your profile data has been saved and rated. You can update your profile or resume anytime by submitting again",
                 "rating_id": rating_id,
-                "github_analysis_preview": github_analysis[:200] + "..." if len(github_analysis) > 200 else github_analysis
-            }), 200
+                "scores": {
+                    "git_score": git_score,
+                    "resume_score": resume_score, 
+                    "overall_score": overall_score
+                }
+            }
+            
+            # Include AI ratings details if available
+            if ai_ratings:
+                response_data["ratings"] = ai_ratings
+
+            return jsonify(response_data), 200
 
         except Exception as db_error:
             print(f"Database error in rate_profile: {db_error}")
