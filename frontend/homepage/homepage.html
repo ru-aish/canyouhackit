@@ -20,9 +20,10 @@
             </div>
             <div class="hidden md:flex items-center space-x-8">
                 <a href="#" class="nav-link hover:text-purple-400 transition">Home</a>
-                <a href="#" class="nav-link hover:text-purple-400 transition">Find Members</a>
+                <a href="../hackathonpage/hackathons.html" class="nav-link hover:text-purple-400 transition">Find Teams</a>
                 <a href="#" class="nav-link hover:text-purple-400 transition">About</a>
                 <a href="#" class="nav-link hover:text-purple-400 transition">Contact</a>
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">Logout</button>
             </div>
             <button class="md:hidden text-white">
                 <i data-lucide="menu"></i>
@@ -77,7 +78,7 @@
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <a href="hackathon.html" class="domain-card bg-gray-800/80 border border-gray-700 rounded-2xl shadow-lg hover:shadow-purple-500/40 hover:scale-[1.03] transition transform cursor-pointer">
+                <a href="../hackathonpage/hackathons.html" class="domain-card bg-gray-800/80 border border-gray-700 rounded-2xl shadow-lg hover:shadow-purple-500/40 hover:scale-[1.03] transition transform cursor-pointer">
                     <div class="image-placeholder bg-blue-500/10 flex justify-center items-center py-8">
                         <i data-lucide="laptop" class="w-16 h-16 text-blue-400"></i>
                     </div>
@@ -127,9 +128,148 @@
     <script>
         lucide.createIcons();
 
-        // Example: fetching skills dynamically and handling availability toggle
-        document.addEventListener("DOMContentLoaded", () => {
-            // --- Handle Skills Display ---
+        // Configuration
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Check for logged-in user session first
+        function getLoggedInUser() {
+            // Check both localStorage and sessionStorage for user session
+            const sessionData = localStorage.getItem('userSession') || sessionStorage.getItem('userSession');
+            
+            if (sessionData) {
+                try {
+                    const session = JSON.parse(sessionData);
+                    const loginTime = new Date(session.loginTime);
+                    const now = new Date();
+                    const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+                    
+                    // Check if session is still valid (within 24 hours for localStorage, always valid for sessionStorage)
+                    const isLocalStorage = localStorage.getItem('userSession');
+                    if (!isLocalStorage || hoursSinceLogin < 24) {
+                        return session;
+                    } else {
+                        // Session expired, clear it
+                        localStorage.removeItem('userSession');
+                        return null;
+                    }
+                } catch (error) {
+                    console.error('Error parsing session data:', error);
+                    localStorage.removeItem('userSession');
+                    sessionStorage.removeItem('userSession');
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        // Load user profile - check session first, then API
+        async function loadUserProfile() {
+            // First check if user is logged in
+            const loggedInUser = getLoggedInUser();
+            
+            if (loggedInUser) {
+                console.log('Loading profile for logged-in user:', loggedInUser.name);
+                // Try to fetch detailed profile from API for the logged-in user
+                try {
+                    const userDetailResponse = await fetch(`${API_BASE_URL}/users/${loggedInUser.userId}?include_skills=true`);
+                    if (userDetailResponse.ok) {
+                        const userDetailData = await userDetailResponse.json();
+                        if (userDetailData.success) {
+                            updateProfileUI(userDetailData.user);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching detailed profile from API:', error);
+                }
+                
+                // Fallback to session data if API call fails
+                updateProfileUI({
+                    name: loggedInUser.name,
+                    user_id: loggedInUser.userId,
+                    email: loggedInUser.email,
+                    bio: "Team Builder | Hackathon Enthusiast"
+                });
+                return;
+            }
+
+            // If no session, redirect to login
+            console.log('No valid session found, redirecting to login');
+            window.location.href = '../login/signin.html';
+        }
+
+        // Update UI with user profile data
+        function updateProfileUI(user) {
+            // Update name and ID
+            const nameElement = document.querySelector('h1');
+            const idElement = document.querySelector('.text-blue-400');
+            
+            if (nameElement) nameElement.textContent = user.name || 'Unknown User';
+            if (idElement) idElement.textContent = `ID: user_${user.user_id}`;
+
+            // Update bio/description if available
+            const bioElement = document.querySelector('.text-gray-400');
+            if (bioElement) {
+                if (user.bio) {
+                    bioElement.textContent = user.bio;
+                } else if (user.experience) {
+                    bioElement.textContent = `${user.experience} | Team Builder`;
+                } else if (user.location) {
+                    bioElement.textContent = `Developer from ${user.location} | Team Builder`;
+                } else {
+                    bioElement.textContent = `Developer | Hackathon Enthusiast`;
+                }
+            }
+
+            // Update skills if available
+            const skillsContainer = document.getElementById("skills-container");
+            if (user.skills && user.skills.length > 0 && skillsContainer) {
+                skillsContainer.innerHTML = "";
+                user.skills.forEach((skillObj, index) => {
+                    const span = document.createElement("span");
+                    // Cycle through different colors
+                    const colors = [
+                        'bg-cyan-500/30 text-cyan-300',
+                        'bg-green-500/30 text-green-300', 
+                        'bg-blue-500/30 text-blue-300',
+                        'bg-pink-500/30 text-pink-300',
+                        'bg-purple-500/30 text-purple-300',
+                        'bg-yellow-500/30 text-yellow-300'
+                    ];
+                    span.className = `skill-pill ${colors[index % colors.length]} px-4 py-1.5 rounded-full text-base`;
+                    span.innerText = skillObj.skill_name || skillObj;
+                    skillsContainer.appendChild(span);
+                });
+            } else {
+                // Fallback to localStorage skills if no backend skills
+                handleStoredSkills();
+            }
+
+            // Update profile logo if available
+            if (user.profile_logo && user.profile_logo !== 'default') {
+                updateProfileAvatar(user.profile_logo);
+            }
+
+            console.log('Loaded user profile:', user.name, 'ID:', user.user_id);
+        }
+
+        // Load demo profile as fallback
+        function loadDemoProfile() {
+            const demoUser = {
+                name: "Ada Lovelace",
+                user_id: "7a2b9c4d",
+                bio: "Frontend Developer | Hackathon Enthusiast",
+                skills: [
+                    { skill_name: "JavaScript" },
+                    { skill_name: "React" },
+                    { skill_name: "Python" }
+                ]
+            };
+            updateProfileUI(demoUser);
+        }
+
+        // Handle stored skills from localStorage (existing functionality)
+        function handleStoredSkills() {
             const skillsContainer = document.getElementById("skills-container");
             const storedSkills = JSON.parse(localStorage.getItem("selectedSkills")) || [];
 
@@ -137,14 +277,43 @@
                 skillsContainer.innerHTML = "";
                 storedSkills.forEach(skill => {
                     const span = document.createElement("span");
-                    // MODIFIED: Removed animate-pulse and shadow
                     span.className = "bg-cyan-500/30 text-cyan-300 px-4 py-1.5 rounded-full text-base";
                     span.innerText = skill;
                     skillsContainer.appendChild(span);
                 });
             }
+        }
 
-            // --- NEW: Handle Availability Toggle Glow ---
+        // Update profile avatar (future feature)
+        function updateProfileAvatar(profileLogo) {
+            // This could be expanded to show different avatar types
+            console.log('Profile logo:', profileLogo);
+        }
+
+        // Handle logout
+        function handleLogout() {
+            // Clear all user session data
+            localStorage.removeItem('userSession');
+            sessionStorage.removeItem('userSession');
+            localStorage.removeItem('rememberedEmail'); // Optional: also clear remembered email
+            
+            console.log('User logged out successfully');
+            
+            // Redirect to login page
+            window.location.href = '../login/signin.html';
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Load user profile data from backend
+            loadUserProfile();
+
+            // Add logout button event listener
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', handleLogout);
+            }
+
+            // --- Handle Availability Toggle Glow ---
             const availabilityToggle = document.getElementById("availability-toggle");
             const playerCard = document.getElementById("player-profile-card");
 

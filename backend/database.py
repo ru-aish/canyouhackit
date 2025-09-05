@@ -423,6 +423,380 @@ class SkillManager:
         except Exception as e:
             return {"success": False, "message": f"Failed to get skills: {str(e)}"}
 
+class TeamManager:
+    """Manage teams and team operations"""
+    
+    def __init__(self, db_manager: DatabaseManager):
+        self.db = db_manager
+    
+    def create_team(self, team_name: str, description: str, leader_id: int, 
+                   max_members: int = 4, application_deadline: Optional[str] = None,
+                   **kwargs) -> Dict[str, Any]:
+        """
+        Create a new team
+        
+        Args:
+            team_name: Name of the team
+            description: Team description and goals
+            leader_id: User ID of the team leader
+            max_members: Maximum number of team members
+            application_deadline: Application deadline date
+            **kwargs: Additional team data for future extensibility
+        """
+        try:
+            cursor = self.db.connection.cursor()
+            
+            # Validate leader exists
+            cursor.execute("SELECT user_id FROM users WHERE user_id = ? AND is_active = 1", (leader_id,))
+            if not cursor.fetchone():
+                return {"success": False, "message": "Invalid team leader"}
+            
+            # Check if user is already leading another active team
+            cursor.execute("""
+                SELECT team_id FROM teams 
+                WHERE leader_id = ? AND status IN ('forming', 'active')
+            """, (leader_id,))
+            if cursor.fetchone():
+                return {"success": False, "message": "User is already leading an active team"}
+            
+            # Validate max_members
+            if max_members < 2 or max_members > 10:
+                max_members = min(max(max_members, 2), 10)
+            
+            # Extract additional fields
+            tech_stack = kwargs.get('tech_stack', [])
+            project_idea = kwargs.get('project_idea', '')
+            hackathon_id = kwargs.get('hackathon_id')
+            
+            # Insert team record
+            cursor.execute("""
+                INSERT INTO teams (team_name, description, max_members, leader_id, 
+                                 tech_stack, project_idea, hackathon_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (team_name, description, max_members, leader_id,
+                  json.dumps(tech_stack) if tech_stack else None,
+                  project_idea, hackathon_id))
+            
+            team_id = cursor.lastrowid
+            
+            # Add leader as team member
+            cursor.execute("""
+                INSERT INTO team_members (team_id, user_id, role, status)
+                VALUES (?, ?, 'leader', 'active')
+            """, (team_id, leader_id))
+            
+            # Update current_members count
+            cursor.execute("""
+                UPDATE teams SET current_members = 1 WHERE team_id = ?
+            """, (team_id,))
+            
+            self.db.connection.commit()
+            
+            # Log activity
+            if hasattr(self, '_log_activity'):
+                self._log_activity(leader_id, "team_created", {
+                    "team_id": team_id, "team_name": team_name, "max_members": max_members
+                })
+            
+            return {
+                "success": True,
+                "message": "Team created successfully",
+                "team_id": team_id,
+                "team": {
+                    "team_id": team_id,
+                    "team_name": team_name,
+                    "description": description,
+                    "max_members": max_members,
+                    "current_members": 1,
+                    "leader_id": leader_id,
+                    "status": "forming"
+                }
+            }
+            
+        except Exception as e:
+            self.db.connection.rollback()
+            return {"success": False, "message": f"Failed to create team: {str(e)}"}
+    
+    def get_all_teams(self, status: Optional[str] = None, include_members: bool = False) -> Dict[str, Any]:
+        """Get all teams with optional filtering"""
+        try:
+            cursor = self.db.connection.cursor()
+            
+            base_query = """
+                SELECT t.*, u.name as leader_name, u.email as leader_email
+                FROM teams t
+                JOIN users u ON t.leader_id = u.user_id
+            """
+            
+            params = []
+            if status:
+                base_query += " WHERE t.status = ?"
+                params.append(status)
+            
+            base_query += " ORDER BY t.created_at DESC"
+            
+            cursor.execute(base_query, params)
+            teams = [dict(row) for row in cursor.fetchall()]
+            
+            # Parse JSON fields
+            for team in teams:
+                if team.get('tech_stack'):
+                    try:
+                        team['tech_stack'] = json.loads(team['tech_stack'])
+                    except:
+                        team['tech_stack'] = []
+                else:
+                    team['tech_stack'] = []
+                
+                # Get team members if requested
+                if include_members:
+                    cursor.execute("""
+                        SELECT tm.*, u.name, u.email, u.profile_logo
+                        FROM team_members tm
+                        JOIN users u ON tm.user_id = u.user_id
+                        WHERE tm.team_id = ? AND tm.status = 'active'
+                        ORDER BY tm.role DESC, tm.joined_at
+                    """, (team['team_id'],))
+                    team['members'] = [dict(row) for row in cursor.fetchall()]
+            
+            return {"success": True, "teams": teams}
+            
+        except Exception as e:
+            return {"success": False, "message": f"Failed to retrieve teams: {str(e)}"}
+    
+    def get_team_by_id(self, team_id: int, include_members: bool = True) -> Dict[str, Any]:
+        """Get team by ID with optional member details"""
+        try:
+            cursor = self.db.connection.cursor()
+            
+            # Get team details
+            cursor.execute("""
+                SELECT t.*, u.name as leader_name, u.email as leader_email, u.profile_logo as leader_logo
+                FROM teams t
+                JOIN users u ON t.leader_id = u.user_id
+                WHERE t.team_id = ?
+            """, (team_id,))
+            
+            team = cursor.fetchone()
+            if not team:
+                return {"success": False, "message": "Team not found"}
+            
+            team_dict = dict(team)
+            
+            # Parse JSON fields
+            if team_dict.get('tech_stack'):
+                try:
+                    team_dict['tech_stack'] = json.loads(team_dict['tech_stack'])
+                except:
+                    team_dict['tech_stack'] = []
+            else:
+                team_dict['tech_stack'] = []
+            
+            # Get team members if requested
+            if include_members:
+                cursor.execute("""
+                    SELECT tm.*, u.name, u.email, u.profile_logo, u.location, u.experience
+                    FROM team_members tm
+                    JOIN users u ON tm.user_id = u.user_id
+                    WHERE tm.team_id = ? AND tm.status = 'active'
+                    ORDER BY tm.role DESC, tm.joined_at
+                """, (team_id,))
+                team_dict['members'] = [dict(row) for row in cursor.fetchall()]
+            
+            return {"success": True, "team": team_dict}
+            
+        except Exception as e:
+            return {"success": False, "message": f"Failed to retrieve team: {str(e)}"}
+    
+    def join_team(self, team_id: int, user_id: int) -> Dict[str, Any]:
+        """Join a team"""
+        try:
+            cursor = self.db.connection.cursor()
+            
+            # Check if team exists and is accepting members
+            cursor.execute("""
+                SELECT team_id, max_members, current_members, status
+                FROM teams WHERE team_id = ?
+            """, (team_id,))
+            team = cursor.fetchone()
+            
+            if not team:
+                return {"success": False, "message": "Team not found"}
+            
+            if team['status'] not in ['forming']:
+                return {"success": False, "message": "Team is not accepting new members"}
+            
+            if team['current_members'] >= team['max_members']:
+                return {"success": False, "message": "Team is full"}
+            
+            # Check if user is already in the team
+            cursor.execute("""
+                SELECT member_id FROM team_members
+                WHERE team_id = ? AND user_id = ? AND status = 'active'
+            """, (team_id, user_id))
+            if cursor.fetchone():
+                return {"success": False, "message": "User is already in this team"}
+            
+            # Check if user is already in another active team
+            cursor.execute("""
+                SELECT tm.team_id FROM team_members tm
+                JOIN teams t ON tm.team_id = t.team_id
+                WHERE tm.user_id = ? AND tm.status = 'active' AND t.status IN ('forming', 'active')
+            """, (user_id,))
+            if cursor.fetchone():
+                return {"success": False, "message": "User is already in another active team"}
+            
+            # Add user to team
+            cursor.execute("""
+                INSERT INTO team_members (team_id, user_id, role, status)
+                VALUES (?, ?, 'member', 'active')
+            """, (team_id, user_id))
+            
+            # Update team member count
+            cursor.execute("""
+                UPDATE teams SET current_members = current_members + 1
+                WHERE team_id = ?
+            """, (team_id,))
+            
+            self.db.connection.commit()
+            
+            return {"success": True, "message": "Successfully joined team"}
+            
+        except Exception as e:
+            self.db.connection.rollback()
+            return {"success": False, "message": f"Failed to join team: {str(e)}"}
+    
+    def leave_team(self, team_id: int, user_id: int) -> Dict[str, Any]:
+        """Leave a team"""
+        try:
+            cursor = self.db.connection.cursor()
+            
+            # Check if user is in the team
+            cursor.execute("""
+                SELECT member_id, role FROM team_members
+                WHERE team_id = ? AND user_id = ? AND status = 'active'
+            """, (team_id, user_id))
+            member = cursor.fetchone()
+            
+            if not member:
+                return {"success": False, "message": "User is not in this team"}
+            
+            # Leaders cannot leave their own team
+            if member['role'] == 'leader':
+                return {"success": False, "message": "Team leaders cannot leave. Transfer leadership or disband the team."}
+            
+            # Remove user from team
+            cursor.execute("""
+                UPDATE team_members SET status = 'left'
+                WHERE team_id = ? AND user_id = ?
+            """, (team_id, user_id))
+            
+            # Update team member count
+            cursor.execute("""
+                UPDATE teams SET current_members = current_members - 1
+                WHERE team_id = ?
+            """, (team_id,))
+            
+            self.db.connection.commit()
+            
+            return {"success": True, "message": "Successfully left team"}
+            
+        except Exception as e:
+            self.db.connection.rollback()
+            return {"success": False, "message": f"Failed to leave team: {str(e)}"}
+    
+    def update_team(self, team_id: int, leader_id: int, **updates) -> Dict[str, Any]:
+        """Update team details (only by leader)"""
+        try:
+            cursor = self.db.connection.cursor()
+            
+            # Verify leadership
+            cursor.execute("""
+                SELECT team_id FROM teams WHERE team_id = ? AND leader_id = ?
+            """, (team_id, leader_id))
+            if not cursor.fetchone():
+                return {"success": False, "message": "Only team leaders can update team details"}
+            
+            # Build update query
+            allowed_fields = ['team_name', 'description', 'max_members', 'project_idea', 'status']
+            update_fields = []
+            params = []
+            
+            for field, value in updates.items():
+                if field in allowed_fields:
+                    if field == 'tech_stack' and isinstance(value, list):
+                        value = json.dumps(value)
+                    update_fields.append(f"{field} = ?")
+                    params.append(value)
+            
+            if not update_fields:
+                return {"success": False, "message": "No valid fields to update"}
+            
+            # Add updated_at
+            update_fields.append("updated_at = CURRENT_TIMESTAMP")
+            params.append(team_id)
+            
+            query = f"UPDATE teams SET {', '.join(update_fields)} WHERE team_id = ?"
+            cursor.execute(query, params)
+            
+            self.db.connection.commit()
+            
+            return {"success": True, "message": "Team updated successfully"}
+            
+        except Exception as e:
+            self.db.connection.rollback()
+            return {"success": False, "message": f"Failed to update team: {str(e)}"}
+    
+    def search_teams(self, search_term: Optional[str] = None, tech_stack: Optional[List[str]] = None,
+                    max_members_range: Optional[tuple] = None, status: str = "forming") -> Dict[str, Any]:
+        """Search teams with filters"""
+        try:
+            cursor = self.db.connection.cursor()
+            
+            query = """
+                SELECT t.*, u.name as leader_name
+                FROM teams t
+                JOIN users u ON t.leader_id = u.user_id
+                WHERE t.status = ?
+            """
+            params = [status]
+            
+            # Add search filters
+            if search_term:
+                query += " AND (t.team_name LIKE ? OR t.description LIKE ?)"
+                search_pattern = f"%{search_term}%"
+                params.extend([search_pattern, search_pattern])
+            
+            if max_members_range:
+                min_members, max_members = max_members_range
+                query += " AND t.max_members BETWEEN ? AND ?"
+                params.extend([min_members, max_members])
+            
+            if tech_stack:
+                for tech in tech_stack:
+                    query += " AND t.tech_stack LIKE ?"
+                    params.append(f"%{tech}%")
+            
+            query += " ORDER BY t.created_at DESC"
+            
+            cursor.execute(query, params)
+            teams = [dict(row) for row in cursor.fetchall()]
+            
+            # Parse JSON fields
+            for team in teams:
+                if team.get('tech_stack'):
+                    try:
+                        team['tech_stack'] = json.loads(team['tech_stack'])
+                    except:
+                        team['tech_stack'] = []
+                else:
+                    team['tech_stack'] = []
+            
+            return {"success": True, "teams": teams}
+            
+        except Exception as e:
+            return {"success": False, "message": f"Failed to search teams: {str(e)}"}
+
 class SystemManager:
     """Manage system settings and configuration"""
     

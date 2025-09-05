@@ -1,0 +1,91 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Login form animations */
+.form-container {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+/* Loading animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Input focus effects */
+input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Button hover effects */
+button:hover {
+    transform: translateY(-1px);
+}
+
+/* Error and success message animations */
+.message-enter {
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: messageSlideIn 0.3s ease-out forwards;
+}
+
+@keyframes messageSlideIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Password toggle button */
+#toggle-password {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+#toggle-password:hover svg {
+    color: #d1d5db;
+}
+
+/* Form validation styles */
+.input-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.input-success {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Loading state */
+.loading-disabled {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+/* Remember me checkbox styling */
+input[type="checkbox"]:checked {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+/* Link hover effects */
+a {
+    transition: color 0.2s ease;
+}
+
+/* Card hover effect */
+.bg-gray-800 {
+    transition: box-shadow 0.3s ease;
+}
+
+.bg-gray-800:hover {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}

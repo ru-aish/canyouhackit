@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from database import DatabaseManager, UserManager, SkillManager, SystemManager
+from database import DatabaseManager, UserManager, SkillManager, SystemManager, TeamManager
 import json
 
 app = Flask(__name__)
@@ -11,10 +11,11 @@ db_manager = None
 user_manager = None
 skill_manager = None
 system_manager = None
+team_manager = None
 
 def initialize_app():
     """Initialize the Flask app with database connections"""
-    global db_manager, user_manager, skill_manager, system_manager
+    global db_manager, user_manager, skill_manager, system_manager, team_manager
     try:
         db_manager = DatabaseManager()
         if not db_manager.connect():
@@ -27,6 +28,7 @@ def initialize_app():
         user_manager = UserManager(db_manager)
         skill_manager = SkillManager(db_manager)
         system_manager = SystemManager(db_manager)
+        team_manager = TeamManager(db_manager)
         
         print("✅ Flask app initialized successfully")
         return True
@@ -245,6 +247,173 @@ def update_system_setting(setting_key):
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to update setting: {str(e)}"}), 500
 
+# Team Management Endpoints
+
+@app.route('/api/teams', methods=['POST'])
+def create_team():
+    """Create a new team"""
+    try:
+        data = request.get_json()
+        
+        # Extract required fields
+        team_name = data.get('team_name', '').strip()
+        description = data.get('description', '').strip()
+        leader_id = data.get('leader_id')
+        
+        # Extract optional fields
+        max_members = data.get('max_members', 4)
+        application_deadline = data.get('application_deadline')
+        tech_stack = data.get('tech_stack', [])
+        project_idea = data.get('project_idea', '').strip()
+        
+        # Validate required fields
+        if not all([team_name, description, leader_id]):
+            return jsonify({"success": False, "message": "Team name, description, and leader ID are required"}), 400
+        
+        # Create team
+        result = team_manager.create_team(
+            team_name=team_name,
+            description=description,
+            leader_id=leader_id,
+            max_members=max_members,
+            application_deadline=application_deadline,
+            tech_stack=tech_stack,
+            project_idea=project_idea
+        )
+        
+        if result['success']:
+            return jsonify(result), 201
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Team creation failed: {str(e)}"}), 500
+
+@app.route('/api/teams', methods=['GET'])
+def get_teams():
+    """Get all teams"""
+    try:
+        status = request.args.get('status', 'forming')
+        include_members = request.args.get('include_members', 'false').lower() == 'true'
+        
+        result = team_manager.get_all_teams(status=status, include_members=include_members)
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to get teams: {str(e)}"}), 500
+
+@app.route('/api/teams/<int:team_id>', methods=['GET'])
+def get_team(team_id):
+    """Get team by ID"""
+    try:
+        include_members = request.args.get('include_members', 'true').lower() == 'true'
+        
+        result = team_manager.get_team_by_id(team_id, include_members=include_members)
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 404 if "not found" in result['message'].lower() else 500
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to get team: {str(e)}"}), 500
+
+@app.route('/api/teams/<int:team_id>/join', methods=['POST'])
+def join_team(team_id):
+    """Join a team"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({"success": False, "message": "User ID is required"}), 400
+        
+        result = team_manager.join_team(team_id, user_id)
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to join team: {str(e)}"}), 500
+
+@app.route('/api/teams/<int:team_id>/leave', methods=['POST'])
+def leave_team(team_id):
+    """Leave a team"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({"success": False, "message": "User ID is required"}), 400
+        
+        result = team_manager.leave_team(team_id, user_id)
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to leave team: {str(e)}"}), 500
+
+@app.route('/api/teams/<int:team_id>', methods=['PUT'])
+def update_team(team_id):
+    """Update team details"""
+    try:
+        data = request.get_json()
+        leader_id = data.get('leader_id')
+        
+        if not leader_id:
+            return jsonify({"success": False, "message": "Leader ID is required"}), 400
+        
+        # Remove leader_id from updates
+        updates = {k: v for k, v in data.items() if k != 'leader_id'}
+        
+        result = team_manager.update_team(team_id, leader_id, **updates)
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to update team: {str(e)}"}), 500
+
+@app.route('/api/teams/search', methods=['GET'])
+def search_teams():
+    """Search teams with filters"""
+    try:
+        search_term = request.args.get('q')
+        tech_stack = request.args.getlist('tech')
+        min_members = request.args.get('min_members', type=int)
+        max_members = request.args.get('max_members', type=int)
+        status = request.args.get('status', 'forming')
+        
+        max_members_range = None
+        if min_members is not None and max_members is not None:
+            max_members_range = (min_members, max_members)
+        
+        result = team_manager.search_teams(
+            search_term=search_term,
+            tech_stack=tech_stack if tech_stack else None,
+            max_members_range=max_members_range,
+            status=status
+        )
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to search teams: {str(e)}"}), 500
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
@@ -275,6 +444,13 @@ if __name__ == '__main__':
         print("  GET /api/skill-categories/<id>/skills - Get skills by category")
         print("  GET /api/settings/<key> - Get system setting")
         print("  PUT /api/settings/<key> - Update system setting")
+        print("  POST /api/teams - Create new team")
+        print("  GET /api/teams - Get all teams")
+        print("  GET /api/teams/<id> - Get team by ID")
+        print("  POST /api/teams/<id>/join - Join team")
+        print("  POST /api/teams/<id>/leave - Leave team")
+        print("  PUT /api/teams/<id> - Update team")
+        print("  GET /api/teams/search - Search teams")
         print("  GET /health - Health check")
         app.run(host='0.0.0.0', port=5000, debug=True)
     else:

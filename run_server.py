@@ -40,12 +40,20 @@ def main():
     print("🚀 Starting HackBite Backend Server...")
     print(f"📂 Working directory: {current_dir}")
     print(f"🌐 Server will be available at: http://localhost:{args.port}")
+    print("🔗 Frontend create team page: frontend/hackathonpage/createateam.html")
     print("=" * 60)
     
     # Initialize the Flask application
     if not initialize_app():
         print("❌ Failed to initialize application. Exiting...")
         sys.exit(1)
+    
+    print("✅ Backend server initialized with team management support")
+    print("📋 Available team endpoints:")
+    print(f"   POST http://localhost:{args.port}/api/teams - Create team")
+    print(f"   GET  http://localhost:{args.port}/api/teams - List teams")
+    print(f"   GET  http://localhost:{args.port}/api/teams/<id> - Get team details")
+    print("=" * 60)
     
     # Start the server
     try:
