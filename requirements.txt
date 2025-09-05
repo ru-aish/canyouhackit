@@ -13,6 +13,9 @@ typing-extensions==4.8.0
 requests==2.31.0  # For external API calls
 python-dotenv==1.0.0  # For environment variable management
 
+# PDF processing
+PyPDF2==3.0.1  # For extracting text from PDF files
+
 # Development and testing packages (optional)
 pytest==7.4.3  # For testing
 pytest-flask==1.3.0  # Flask-specific testing utilities

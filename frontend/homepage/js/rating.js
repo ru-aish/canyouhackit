@@ -12,8 +12,8 @@ document.getElementById('rating-form').addEventListener('submit', async function
     }
 
     submitButton.disabled = true;
-    submitButton.textContent = 'Analyzing... Please Wait';
-    resultContainer.innerHTML = `<p class="text-yellow-400">Reading file and contacting AI... this may take a moment.</p>`;
+    submitButton.textContent = 'Storing Data...';
+    resultContainer.innerHTML = `<p class="text-yellow-400">Uploading resume and GitHub information...</p>`;
 
     // Convert PDF to base64 to send as a string
     const reader = new FileReader();
@@ -27,7 +27,8 @@ document.getElementById('rating-form').addEventListener('submit', async function
         };
 
         try {
-            const response = await fetch('http://localhost:3000/api/rate-profile', {
+            // Use our Python backend
+            const response = await fetch('http://localhost:5000/api/rate-profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(profileData),
@@ -38,29 +39,28 @@ document.getElementById('rating-form').addEventListener('submit', async function
             }
 
             const result = await response.json();
-            const { reasoning, githubRating, resumeRating, finalRating } = result.ratingData;
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Data storage failed');
+            }
 
-            // Store the ratings in localStorage to be used on the home page
-            localStorage.setItem('userRatings', JSON.stringify({
-                github: githubRating,
-                resume: resumeRating,
-                overall: finalRating
-            }));
+            // Clear any existing ratings from localStorage since we're just storing data now
+            localStorage.removeItem('userRatings');
 
             resultContainer.innerHTML = `
                 <div class="bg-gray-700 p-4 rounded-lg">
-                    <p class="text-gray-300 mb-2"><strong>AI Reasoning:</strong> "${reasoning}"</p>
-                    <p class="text-xl font-bold text-green-400">Overall Rating: ${finalRating}</p>
-                    <a href="index.html" class="inline-block mt-4 text-blue-400 hover:text-blue-300">&larr; Go back to your profile to see the update</a>
+                    <p class="text-green-400 mb-2"><strong>✅ Success!</strong> Your profile data has been saved.</p>
+                    <p class="text-gray-300 mb-2">You can update your profile or resume anytime by submitting again.</p>
+                    <a href="homepage.html" class="inline-block mt-4 text-blue-400 hover:text-blue-300">&larr; Go back to homepage</a>
                 </div>
             `;
-            submitButton.textContent = 'Rating Complete!';
+            submitButton.textContent = 'Profile Saved!';
 
         } catch (error) {
-            console.error('Failed to get rating:', error);
-            resultContainer.innerHTML = `<p class="text-red-500">Error: Could not get a rating. Is the backend server running?</p>`;
+            console.error('Failed to store data:', error);
+            resultContainer.innerHTML = `<p class="text-red-500">Error: Could not store data. ${error.message}</p>`;
             submitButton.disabled = false;
-            submitButton.textContent = 'Get My AI Rating';
+            submitButton.textContent = 'Store My Data';
         }
     };
 
@@ -68,6 +68,6 @@ document.getElementById('rating-form').addEventListener('submit', async function
         console.error('Error reading file:', error);
         resultContainer.innerHTML = `<p class="text-red-500">Error: Could not read the resume file.</p>`;
         submitButton.disabled = false;
-        submitButton.textContent = 'Get My AI Rating';
+        submitButton.textContent = 'Store My Data';
     };
 });
