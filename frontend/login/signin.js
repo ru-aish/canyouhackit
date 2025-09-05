@@ -289,6 +289,21 @@ document.addEventListener('DOMContentLoaded', () => {
     loginForm.addEventListener('submit', handleLogin);
     togglePasswordBtn.addEventListener('click', togglePasswordVisibility);
     
+    // Add Enter key functionality for individual inputs
+    emailInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            passwordInput.focus();
+        }
+    });
+    
+    passwordInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            loginForm.dispatchEvent(new Event('submit'));
+        }
+    });
+    
     // Focus on email input
     emailInput.focus();
     

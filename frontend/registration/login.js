@@ -2,6 +2,9 @@ let currentStep = 1;
 const totalSteps = 5;
 let selectedAvatar = null;
 
+// API Configuration
+const API_BASE_URL = 'http://localhost:5000/api';
+
 // Header text for each step
 const headerContent = {
     1: { title: "Let's build your profile", subtitle: "Join a team of innovators." },
@@ -120,25 +123,36 @@ function nextStep(step) {
 
      // Simulate loading and completion
     if (step === 4) { // This is the new final user-interactive step
-        setTimeout(() => {
-           document.getElementById('header-title').textContent = "You're all set!";
-           document.getElementById('header-subtitle').textContent = "Happy hacking!";
-           document.getElementById('step-5').innerHTML = `
-                <div class="flex justify-center items-center mb-6">
-                     <svg class="w-20 h-20 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <h2 class="text-2xl font-bold mb-2">Profile Created!</h2>
-                <p class="text-gray-400">You can now start connecting with other participants.</p>
-           `;
-        }, 3000); // 3-second delay
+        // Collect all registration data
+        const registrationData = collectRegistrationData();
+        
+        // Show loading state
+        document.getElementById('header-title').textContent = "Creating your profile...";
+        document.getElementById('header-subtitle').textContent = "Please wait while we set up your account.";
+        
+        // Submit registration to backend
+        submitRegistration(registrationData);
     }
 }
 
 // Add click listeners to skill tags
-document.querySelectorAll('.skill-tag').forEach(tag => {
-    tag.addEventListener('click', () => {
-        tag.classList.toggle('selected');
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for DOM to be ready, then set up skill tag listeners
+    setTimeout(() => {
+        document.querySelectorAll('.skill-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                tag.classList.toggle('selected');
+                // Visual feedback for selected skills
+                if (tag.classList.contains('selected')) {
+                    tag.classList.remove('bg-gray-700', 'border-gray-600');
+                    tag.classList.add('bg-indigo-600', 'border-indigo-500');
+                } else {
+                    tag.classList.remove('bg-indigo-600', 'border-indigo-500');
+                    tag.classList.add('bg-gray-700', 'border-gray-600');
+                }
+            });
+        });
+    }, 100);
 });
 
 // Populate and handle avatar selection
@@ -146,12 +160,16 @@ const avatarContainer = document.querySelector('#step-2 .grid');
 avatars.forEach((avatarSVG, index) => {
     const div = document.createElement('div');
     div.innerHTML = avatarSVG;
-    div.className = 'avatar-option cursor-pointer bg-gray-700 p-4 rounded-full border-4 border-transparent aspect-square flex items-center justify-center';
+    div.className = 'avatar-option cursor-pointer bg-gray-700 p-4 rounded-full border-4 border-transparent aspect-square flex items-center justify-center hover:border-gray-500 transition-colors';
     div.dataset.avatarId = index;
     
     div.addEventListener('click', () => {
-         document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
-         div.classList.add('selected');
+         document.querySelectorAll('.avatar-option').forEach(opt => {
+             opt.classList.remove('selected', 'border-indigo-500', 'bg-indigo-600');
+             opt.classList.add('border-transparent', 'bg-gray-700');
+         });
+         div.classList.add('selected', 'border-indigo-500', 'bg-indigo-600');
+         div.classList.remove('border-transparent', 'bg-gray-700');
          selectedAvatar = index;
          document.getElementById('avatar-error').classList.add('hidden');
     });
@@ -160,3 +178,117 @@ avatars.forEach((avatarSVG, index) => {
 
 // Initialize view
 showStep(currentStep);
+
+// Function to redirect to sign in page
+function redirectToSignIn() {
+    window.location.href = '../login/signin.html';
+}
+
+// Collect registration data from form
+function collectRegistrationData() {
+    // Basic information
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    
+    // Avatar selection - map index to avatar name
+    const avatarNames = ['rocket', 'code', 'brain', 'planet', 'abstract', 'user'];
+    const profile_logo = selectedAvatar !== null ? avatarNames[selectedAvatar] : 'default';
+    
+    // Skills selection
+    const selectedSkills = [];
+    document.querySelectorAll('.skill-tag.selected').forEach(tag => {
+        selectedSkills.push(tag.textContent.trim());
+    });
+    
+    // Location and experience
+    const location = document.getElementById('location').value.trim() || null;
+    const experience = document.getElementById('experience').value.trim() || null;
+    
+    return {
+        name,
+        email,
+        password,
+        profile_logo,
+        skills: selectedSkills,
+        location,
+        experience
+    };
+}
+
+// Submit registration to backend API
+async function submitRegistration(registrationData) {
+    try {
+        console.log('Submitting registration:', registrationData);
+        
+        const response = await fetch(`${API_BASE_URL}/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(registrationData)
+        });
+        
+        const result = await response.json();
+        console.log('Registration response:', result);
+        
+        if (result.success) {
+            // Registration successful
+            setTimeout(() => {
+                document.getElementById('header-title').textContent = "You're all set!";
+                document.getElementById('header-subtitle').textContent = "Happy hacking!";
+                document.getElementById('step-5').innerHTML = `
+                    <div class="flex justify-center items-center mb-6">
+                         <svg class="w-20 h-20 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Profile Created!</h2>
+                    <p class="text-gray-400 mb-6">Account created successfully! You can now sign in with your credentials.</p>
+                    <button onclick="redirectToSignIn()" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">Sign In to Your Account</button>
+               `;
+            }, 1000); // 1-second delay for better UX
+        } else {
+            // Registration failed
+            document.getElementById('header-title').textContent = "Registration Failed";
+            document.getElementById('header-subtitle').textContent = "Please try again.";
+            document.getElementById('step-5').innerHTML = `
+                <div class="flex justify-center items-center mb-6">
+                     <svg class="w-20 h-20 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Registration Failed</h2>
+                <p class="text-red-400 mb-6">${result.message || 'An error occurred during registration.'}</p>
+                <button onclick="location.reload()" class="w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">Try Again</button>
+           `;
+        }
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        
+        // Network or other error
+        document.getElementById('header-title').textContent = "Connection Error";
+        document.getElementById('header-subtitle').textContent = "Please check your connection.";
+        document.getElementById('step-5').innerHTML = `
+            <div class="flex justify-center items-center mb-6">
+                 <svg class="w-20 h-20 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Connection Error</h2>
+            <p class="text-yellow-400 mb-6">Unable to connect to the server. Please check your internet connection and try again.</p>
+            <button onclick="location.reload()" class="w-full text-white bg-yellow-600 hover:bg-yellow-700 focus:ring-4 focus:ring-yellow-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">Try Again</button>
+       `;
+    }
+}
+
+// Add Enter key functionality to forms
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        
+        // Get the current step's continue button and click it
+        const currentStepElement = document.getElementById(`step-${currentStep}`);
+        if (currentStepElement && !currentStepElement.classList.contains('hidden')) {
+            const continueButton = currentStepElement.querySelector('button');
+            if (continueButton) {
+                continueButton.click();
+            }
+        }
+    }
+});
