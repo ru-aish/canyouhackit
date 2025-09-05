@@ -23,26 +23,26 @@ def extract_text_from_pdf_base64(base64_data):
         # Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
         if ',' in base64_data:
             base64_data = base64_data.split(',')[1]
-        
+
         # Decode base64 to bytes
         pdf_bytes = base64.b64decode(base64_data)
-        
+
         # Create a BytesIO object from the bytes
         pdf_file = io.BytesIO(pdf_bytes)
-        
+
         # Read PDF using PyPDF2
         pdf_reader = PdfReader(pdf_file)
-        
+
         # Extract text from all pages
         text = ""
         for page in pdf_reader.pages:
             text += page.extract_text() + "\n"
-        
+
         # Clean up the text (remove excessive whitespace)
         text = ' '.join(text.split())
-        
+
         return text.strip()
-    
+
     except Exception as e:
         print(f"Error extracting text from PDF: {e}")
         return f"[PDF TEXT EXTRACTION FAILED: {str(e)}]"
@@ -678,7 +678,8 @@ def rate_profile():
                 )
                 db_manager.connection.commit()
                 rating_id = existing_record[0]
-                print(f"Successfully updated existing resume data with ID: {rating_id}")
+                print(
+                    f"Successfully updated existing resume data with ID: {rating_id}")
             else:
                 # Insert new record
                 cursor = db_manager.connection.execute(
@@ -689,7 +690,8 @@ def rate_profile():
                 )
                 db_manager.connection.commit()
                 rating_id = cursor.lastrowid
-                print(f"Successfully stored new resume data with ID: {rating_id}")
+                print(
+                    f"Successfully stored new resume data with ID: {rating_id}")
 
             return jsonify({
                 "success": True,
