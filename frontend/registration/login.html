@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Your Profile | TeamUp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="login.css">
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-2xl mx-auto p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-10 relative overflow-hidden min-h-[550px]">
+            <!-- Header with Logo and Progress -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center bg-indigo-600 w-16 h-16 rounded-full mb-4">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21v-1a6 6 0 00-5.197-5.977M9 21v-1a6 6 0 016-6 6 6 0 016 6v1z"></path></svg>
+                </div>
+                 <h1 id="header-title" class="text-3xl font-bold text-white">Let's build your profile</h1>
+                 <p id="header-subtitle" class="text-gray-400 mt-2">Join a team of innovators.</p>
+            </div>
+            
+             <!-- Progress Bar -->
+            <div class="w-full bg-gray-700 rounded-full h-2 mb-10">
+                <div id="progress-bar" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 20%"></div>
+            </div>
+
+
+            <!-- Step 1: crenditials -->
+            <div id="step-1" class="step">
+                <div class="mb-6">
+                    <!-- Full Name -->
+                        <label for="name" class="block mb-2 text-sm font-medium text-gray-300">
+                        What's your full name?
+                        </label>
+                        <input type="text" id="name"
+                        class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4 placeholder-gray-400"
+                        placeholder="e.g. Ada Lovelace" required>
+                        <p id="name-error" class="text-red-400 text-sm mt-2 hidden">
+                        Please enter your name to continue.
+                        </p>
+
+                        <!-- Email -->
+                        <label for="email" class="block mt-4 mb-2 text-sm font-medium text-gray-300">
+                        Enter your Email id?
+                        </label>
+                        <input type="email" id="email"
+                        class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4 placeholder-gray-400"
+                        placeholder="e.g. 123@gmail.com" required>
+                        <p id="email-error" class="text-red-400 text-sm mt-2 hidden">
+                        Please enter your email to continue.
+                        </p>
+
+                        <!-- Password -->
+                        <label for="password" class="block mt-4 mb-2 text-sm font-medium text-gray-300">
+                        Enter your Password
+                        </label>
+                        <input type="password" id="password"
+                        class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4 placeholder-gray-400"
+                        placeholder="Enter a strong password" required>
+                        <p id="password-error" class="text-red-400 text-sm mt-2 hidden">
+                        Please enter a password to continue.
+                        </p>
+
+                </div>
+                <button onclick="nextStep(1)" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">Continue</button>
+            </div>
+            
+            <!-- Step 2: Avatar -->
+            <div id="step-2" class="step hidden">
+                <h2 class="text-2xl font-bold mb-2">Choose your avatar</h2>
+                <p class="text-gray-400 mb-6">Pick an avatar that represents you.</p>
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-6">
+                    <!-- Avatar options will be added here -->
+                </div>
+                 <p id="avatar-error" class="text-red-400 text-sm mt-2 hidden text-center mb-4">Please select an avatar.</p>
+                <button onclick="nextStep(2)" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">Continue</button>
+            </div>
+
+            <!-- Step 3: Skills -->
+            <div id="step-3" class="step hidden">
+                <h2 class="text-2xl font-bold mb-2">What are your superpowers?</h2>
+                <p class="text-gray-400 mb-6">Select skills you're proficient in. This helps us find the right team for you.</p>
+                
+                <div class="space-y-4">
+                    <!-- Skill Category -->
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Programming & Tech</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Frontend Development</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Backend Development</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Full Stack Development</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">AI / ML</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Cybersecurity</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Competitive Programming</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Data Science & Analytics</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Blockchain / Web3</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">IoT & Embedded Systems</div>
+                        </div>
+                    </div>
+                     <!-- Skill Category -->
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Design & Creative</h3>
+                        <div class="flex flex-wrap gap-3">
+                             <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">UI / UX Design</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Video Editing / Motion Graphics</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Game Design</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Content Writing</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Gaming and Esports</h3>
+                        <div class="flex flex-wrap gap-3">
+                             <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Valorant</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">BGMI / PUBG Mobile</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Other Casual Games</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">FIFA / eFootball</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg mb-3">Soft Skills & Management</h3>
+                        <div class="flex flex-wrap gap-3">
+                             <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Public Speaking</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">eam Management / Leadership</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Event Organizing</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Marketing & Outreach</div>
+                            <div class="skill-tag cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-4 py-2">Finance / Budgeting</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="nextStep(3)" class="w-full mt-8 text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">Continue</button>
+            </div>
+
+            <!-- Step 4: Experience & Location -->
+            <div id="step-4" class="step hidden">
+                <h2 class="text-2xl font-bold mb-2">Tell us more about you</h2>
+                <p class="text-gray-400 mb-6">A little more detail goes a long way.</p>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label for="location" class="block mb-2 text-sm font-medium text-gray-300">Where are you based?</label>
+                        <input type="text" id="location" class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4 placeholder-gray-400" placeholder="City, Country">
+                    </div>
+                    <div>
+                         <label for="experience" class="block mb-2 text-sm font-medium text-gray-300">Share your past experience or project ideas</label>
+                        <textarea id="experience" rows="4" class="block p-4 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400" placeholder="I built a web app for... or I'm interested in building..."></textarea>
+                    </div>
+                </div>
+                 <button onclick="nextStep(4)" class="w-full mt-8 text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">Finish Setup</button>
+            </div>
+            
+            <!-- Step 5: Finalizing -->
+            <div id="step-5" class="step hidden text-center">
+                 <div class="flex justify-center items-center mb-6">
+                     <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-600 h-20 w-20"></div>
+                 </div>
+                 <h2 class="text-2xl font-bold mb-2">Finding your dream team...</h2>
+                 <p class="text-gray-400">We're analyzing your profile to find the best potential teammates for the hackathon.</p>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="login.js" defer></script>
+</body>
+</html>
+

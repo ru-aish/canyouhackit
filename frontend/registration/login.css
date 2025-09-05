@@ -1,0 +1,35 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+/* Custom transition for a smoother step change */
+.step {
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+.step.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    position: absolute;
+    pointer-events: none;
+}
+.skill-tag, .avatar-option {
+    transition: all 0.2s ease-in-out;
+}
+.skill-tag.selected {
+    background-color: #4f46e5; /* indigo-600 */
+    color: white;
+    border-color: #4f46e5;
+}
+.avatar-option.selected {
+    border-color: #4f46e5; /* indigo-600 */
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(79, 70, 229, 0.5);
+}
+.loader {
+    border-top-color: #4f46e5;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
