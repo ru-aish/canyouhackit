@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Team | TeamUp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles to hide number input spinners */
+        input[type='number']::-webkit-inner-spin-button,
+        input[type='number']::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type='number'] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-2xl mx-auto p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-10">
+            <!-- Header with Logo -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center bg-indigo-600 w-16 h-16 rounded-full mb-4">
+                    <!-- Team/Users Icon -->
+                    <svg class="w-10 h-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962a3.75 3.75 0 015.962 0zM16.5 9.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5zM12 15h.008v.008H12V15z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5a9 9 0 0115.25-5.25" />
+                    </svg>                      
+                </div>
+                <h1 class="text-3xl font-bold text-white">Create a New Team</h1>
+                <p class="text-gray-400 mt-2">Assemble your squad and start building.</p>
+            </div>
+            
+            <form id="create-team-form" class="space-y-6">
+                <!-- Team Name -->
+                <div>
+                    <label for="team-name" class="block mb-2 text-sm font-medium text-gray-300">Team Name</label>
+                    <input type="text" id="team-name" class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4 placeholder-gray-400" placeholder="e.g. The Code Crusaders" required>
+                </div>
+
+                <!-- Team Goal/Description -->
+                <div>
+                    <label for="team-description" class="block mb-2 text-sm font-medium text-gray-300">Team Goal & Description</label>
+                    <textarea id="team-description" rows="4" class="block p-4 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400" placeholder="Describe the project you want to build or the goal of your team..." required></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <!-- Application Deadline -->
+                    <div>
+                        <label for="team-deadline" class="block mb-2 text-sm font-medium text-gray-300">Application Deadline</label>
+                        <input type="date" id="team-deadline" class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4" required>
+                    </div>
+
+                    <!-- Max Members -->
+                    <div>
+                        <label for="max-members" class="block mb-2 text-sm font-medium text-gray-300">Max Members</label>
+                        <div class="relative flex items-center">
+                            <button type="button" id="minus-btn" class="absolute left-0 p-3 text-gray-400 hover:text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                            </button>
+                            <input type="number" id="max-members" value="2" min="2" max="10" class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-4 text-center placeholder-gray-400" required>
+                            <button type="button" id="plus-btn" class="absolute right-0 p-3 text-gray-400 hover:text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">
+                    Create Team
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('create-team-form');
+            const maxMembersInput = document.getElementById('max-members');
+            const minusBtn = document.getElementById('minus-btn');
+            const plusBtn = document.getElementById('plus-btn');
+
+            // Set minimum date for the deadline input to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('team-deadline').setAttribute('min', today);
+
+            // --- Logic for the Max Members input buttons ---
+            minusBtn.addEventListener('click', () => {
+                let currentValue = parseInt(maxMembersInput.value, 10);
+                if (currentValue > parseInt(maxMembersInput.min, 10)) {
+                    maxMembersInput.value = currentValue - 1;
+                }
+            });
+
+            plusBtn.addEventListener('click', () => {
+                let currentValue = parseInt(maxMembersInput.value, 10);
+                if (currentValue < parseInt(maxMembersInput.max, 10)) {
+                    maxMembersInput.value = currentValue + 1;
+                }
+            });
+
+            // --- Form Submission Logic ---
+            form.addEventListener('submit', (event) => {
+                event.preventDefault(); // Prevent the default form submission
+
+                // Get values from the form
+                const teamName = document.getElementById('team-name').value.trim();
+                const description = document.getElementById('team-description').value.trim();
+                const deadline = document.getElementById('team-deadline').value;
+                const members = maxMembersInput.value;
+
+                // Basic validation
+                if (!teamName || !description || !deadline) {
+                    alert('Please fill out all required fields.');
+                    return;
+                }
+                
+                // On success, you would typically send this data to a server
+                console.log({
+                    teamName,
+                    description,
+                    deadline,
+                    members
+                });
+
+                alert(`Team "${teamName}" has been created successfully!`);
+                form.reset(); // Clear the form
+            });
+        });
+    </script>
+</body>
+</html>
+    

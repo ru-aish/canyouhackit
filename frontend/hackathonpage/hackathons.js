@@ -7,11 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const button = e.target.closest('.option-btn');
         const eventName = card.dataset.event;
+        const infoUrl = card.dataset.infoUrl;
 
         if (button) {
             e.stopPropagation();
             if (button.classList.contains('btn-info')) {
-                const infoUrl = card.dataset.infoUrl;
                 if (infoUrl) {
                     window.open(infoUrl, '_blank');
                 } else {
@@ -20,14 +20,15 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (button.classList.contains('btn-teams')) {
                 alert(`Looking for teams for: ${eventName}`);
             } else if (button.classList.contains('btn-people')) {
-                alert(`Looking for people for: ${eventName}`);
+                // Navigates to the create team page
+                window.location.href = 'createateam.html';
             }
             return;
         }
 
         const isSelected = card.classList.contains('selected');
         
-        document.querySelectorAll('.event-card').forEach(c => {
+        document.querySelectorAll('.event--card').forEach(c => {
             c.classList.remove('selected');
         });
 
@@ -36,4 +37,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
