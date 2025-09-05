@@ -265,10 +265,33 @@ def create_team():
         application_deadline = data.get('application_deadline')
         tech_stack = data.get('tech_stack', [])
         project_idea = data.get('project_idea', '').strip()
+        hackathon_id = data.get('hackathon_id')  # NEW: hackathon linking
         
         # Validate required fields
         if not all([team_name, description, leader_id]):
             return jsonify({"success": False, "message": "Team name, description, and leader ID are required"}), 400
+        
+        # If hackathon_id is provided, check if hackathon exists
+        if hackathon_id:
+            cursor = db_manager.connection.execute(
+                "SELECT hackathon_id FROM hackathons WHERE hackathon_id = ?", 
+                (hackathon_id,)
+            )
+            if not cursor.fetchone():
+                return jsonify({"success": False, "message": "Hackathon not found"}), 404
+            
+            # Check if user already created a team for this hackathon
+            cursor = db_manager.connection.execute(
+                "SELECT team_id, team_name FROM teams WHERE hackathon_id = ? AND leader_id = ?",
+                (hackathon_id, leader_id)
+            )
+            existing_team = cursor.fetchone()
+            if existing_team:
+                return jsonify({
+                    "success": False, 
+                    "message": f"You have already created a team '{existing_team[1]}' for this hackathon",
+                    "existing_team_id": existing_team[0]
+                }), 400
         
         # Create team
         result = team_manager.create_team(
@@ -278,7 +301,8 @@ def create_team():
             max_members=max_members,
             application_deadline=application_deadline,
             tech_stack=tech_stack,
-            project_idea=project_idea
+            project_idea=project_idea,
+            hackathon_id=hackathon_id  # NEW: pass hackathon_id
         )
         
         if result['success']:
@@ -288,6 +312,42 @@ def create_team():
             
     except Exception as e:
         return jsonify({"success": False, "message": f"Team creation failed: {str(e)}"}), 500
+
+@app.route('/api/teams/check-existing', methods=['GET'])
+def check_existing_team():
+    """Check if user already created a team for a specific hackathon"""
+    try:
+        hackathon_id = request.args.get('hackathon_id')
+        leader_id = request.args.get('leader_id')
+        
+        if not hackathon_id or not leader_id:
+            return jsonify({"success": False, "message": "Hackathon ID and leader ID are required"}), 400
+        
+        cursor = db_manager.connection.execute(
+            """SELECT t.team_id, t.team_name, t.description, t.max_members, t.created_at, 
+                      h.name as hackathon_name
+               FROM teams t 
+               JOIN hackathons h ON t.hackathon_id = h.hackathon_id 
+               WHERE t.hackathon_id = ? AND t.leader_id = ?""",
+            (hackathon_id, leader_id)
+        )
+        row = cursor.fetchone()
+        
+        if row:
+            team_data = dict(row)
+            return jsonify({
+                "success": True,
+                "exists": True,
+                "team": team_data
+            }), 200
+        else:
+            return jsonify({
+                "success": True,
+                "exists": False
+            }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to check existing team: {str(e)}"}), 500
 
 @app.route('/api/teams', methods=['GET'])
 def get_teams():
@@ -651,6 +711,7 @@ if __name__ == '__main__':
         print("  POST /api/teams - Create new team")
         print("  GET /api/teams - Get all teams")
         print("  GET /api/teams/<id> - Get team by ID")
+        print("  GET /api/teams/check-existing - Check if user already created team for hackathon")
         print("  POST /api/teams/<id>/join - Join team")
         print("  POST /api/teams/<id>/leave - Leave team")
         print("  PUT /api/teams/<id> - Update team")

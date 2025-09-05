@@ -39,6 +39,16 @@
             </div>
             
             <form id="create-team-form" class="space-y-6">
+                <!-- Hidden fields for hackathon info -->
+                <input type="hidden" id="hackathon-id" name="hackathon_id">
+                <input type="hidden" id="hackathon-name" name="hackathon_name">
+                
+                <!-- Hackathon Info Display -->
+                <div id="hackathon-info" class="bg-gray-700 rounded-lg p-4 mb-4 hidden">
+                    <h3 class="text-lg font-semibold text-indigo-400 mb-2">Creating team for:</h3>
+                    <p id="hackathon-display-name" class="text-white"></p>
+                </div>
+                
                 <!-- Team Name -->
                 <div>
                     <label for="team-name" class="block mb-2 text-sm font-medium text-gray-300">Team Name</label>
@@ -74,9 +84,12 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">
+                <button type="submit" id="submit-btn" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">
                     Create Team
                 </button>
+                
+                <!-- Status Messages -->
+                <div id="status-message" class="hidden p-4 rounded-lg text-center"></div>
             </form>
         </div>
     </main>
@@ -182,6 +195,11 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('team-deadline').setAttribute('min', today);
 
+            // Get URL parameters for hackathon info
+            const urlParams = new URLSearchParams(window.location.search);
+            const hackathonId = urlParams.get('hackathon_id');
+            const hackathonName = urlParams.get('hackathon_name');
+            
             // Check if user is logged in
             const currentUser = getCurrentUser();
             if (!currentUser) {
@@ -205,6 +223,17 @@
                     <strong>✅ Logged in as:</strong> ${currentUser.name} (${currentUser.email})
                 `;
                 form.parentNode.insertBefore(infoDiv, form);
+                
+                // Handle hackathon info if provided
+                if (hackathonId && hackathonName) {
+                    document.getElementById('hackathon-id').value = hackathonId;
+                    document.getElementById('hackathon-name').value = hackathonName;
+                    document.getElementById('hackathon-display-name').textContent = decodeURIComponent(hackathonName);
+                    document.getElementById('hackathon-info').classList.remove('hidden');
+                    
+                    // Check if user already created a team for this hackathon
+                    checkExistingTeam(hackathonId, currentUser.user_id);
+                }
             }
 
             // --- Logic for the Max Members input buttons ---
@@ -223,86 +252,145 @@
             });
 
             // --- Form Submission Logic ---
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault(); // Prevent the default form submission
-
-                // Get values from the form
-                const teamName = document.getElementById('team-name').value.trim();
-                const description = document.getElementById('team-description').value.trim();
-                const deadline = document.getElementById('team-deadline').value;
-                const members = parseInt(maxMembersInput.value);
-
-                // Basic validation
-                if (!teamName || !description || !deadline) {
-                    showError('Please fill out all required fields.');
-                    return;
-                }
-
-                // Get leader_id from current user
-                const leaderId = currentUser?.user_id;
-                if (!leaderId) {
-                    showError('You must be logged in to create a team. Please sign in first.');
-                    return;
-                }
-
-                const submitBtn = event.target.querySelector('button[type="submit"]');
-                
-                try {
-                    // Show loading state
-                    setLoadingState(submitBtn, true);
-
-                    // Send data to the backend API
-                    const response = await fetch(`${API_BASE_URL}/teams`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            team_name: teamName,
-                            description: description,
-                            leader_id: leaderId,
-                            max_members: members,
-                            application_deadline: deadline
-                        })
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        showSuccess(`Team "${teamName}" has been created successfully! Team ID: ${result.team_id}`);
-                        
-                        // Store team info for potential use
-                        localStorage.setItem('last_created_team_id', result.team_id);
-                        
-                        // Clear the form
-                        form.reset();
-                        
-                        // Reset the max members to default
-                        maxMembersInput.value = 2;
-                        
-                        // Set today's date again
-                        document.getElementById('team-deadline').setAttribute('min', today);
-                        
-                        // Optionally redirect to team page after delay
-                        setTimeout(() => {
-                            const shouldRedirect = confirm('Would you like to view your new team?');
-                            if (shouldRedirect) {
-                                // You can implement team view page later
-                                window.location.href = `../hackathonpage/hackathons.html?team=${result.team_id}`;
-                            }
-                        }, 2000);
-                    } else {
-                        showError(`Failed to create team: ${result.message}`);
-                    }
-                } catch (error) {
-                    console.error('Error creating team:', error);
-                    showError('Failed to create team. Please check if the server is running and try again.');
-                } finally {
-                    // Remove loading state
-                    setLoadingState(submitBtn, false);
-                }
-            });
+            form.addEventListener('submit', handleFormSubmit);
         });
+
+        // Function to check if user already created a team for this hackathon
+        async function checkExistingTeam(hackathonId, userId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/teams/check-existing?hackathon_id=${hackathonId}&leader_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.success && data.exists) {
+                    showStatus(`You have already created a team for this hackathon: "${data.team.team_name}"`, 'warning');
+                    document.getElementById('submit-btn').disabled = true;
+                    document.getElementById('submit-btn').textContent = 'Team Already Created';
+                    document.getElementById('submit-btn').classList.add('bg-gray-600', 'cursor-not-allowed');
+                    document.getElementById('submit-btn').classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    
+                    // Offer option to view existing team
+                    const viewTeamBtn = document.createElement('button');
+                    viewTeamBtn.type = 'button';
+                    viewTeamBtn.className = 'w-full mt-2 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-800 font-medium rounded-lg text-md px-5 py-4 text-center transition';
+                    viewTeamBtn.textContent = 'View Your Existing Team';
+                    viewTeamBtn.onclick = () => {
+                        window.location.href = `hackathons.html?team=${data.team.team_id}`;
+                    };
+                    
+                    document.getElementById('submit-btn').parentNode.insertBefore(viewTeamBtn, document.getElementById('submit-btn').nextSibling);
+                }
+            } catch (error) {
+                console.log('Could not check existing team:', error);
+            }
+        }
+
+        // Function to show status messages
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden', 'bg-green-600', 'bg-red-600', 'bg-yellow-600');
+            
+            switch (type) {
+                case 'success':
+                    statusDiv.classList.add('bg-green-600');
+                    break;
+                case 'error':
+                    statusDiv.classList.add('bg-red-600');
+                    break;
+                case 'warning':
+                    statusDiv.classList.add('bg-yellow-600');
+                    break;
+            }
+        }
+
+        // Enhanced form submission handler
+        async function handleFormSubmit(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            // Get values from the form
+            const teamName = document.getElementById('team-name').value.trim();
+            const description = document.getElementById('team-description').value.trim();
+            const deadline = document.getElementById('team-deadline').value;
+            const members = parseInt(document.getElementById('max-members').value);
+            const hackathonId = document.getElementById('hackathon-id').value;
+
+            // Basic validation
+            if (!teamName || !description || !deadline) {
+                showStatus('Please fill out all required fields.', 'error');
+                return;
+            }
+
+            // Get leader_id from current user
+            const currentUser = getCurrentUser();
+            const leaderId = currentUser?.user_id;
+            if (!leaderId) {
+                showStatus('You must be logged in to create a team. Please sign in first.', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            
+            try {
+                // Show loading state
+                setLoadingState(submitBtn, true);
+
+                // Prepare request data
+                const requestData = {
+                    team_name: teamName,
+                    description: description,
+                    leader_id: leaderId,
+                    max_members: members,
+                    application_deadline: deadline
+                };
+
+                // Add hackathon_id if provided
+                if (hackathonId) {
+                    requestData.hackathon_id = parseInt(hackathonId);
+                }
+
+                // Send data to the backend API
+                const response = await fetch(`${API_BASE_URL}/teams`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const hackathonInfo = hackathonId ? ` for ${decodeURIComponent(document.getElementById('hackathon-name').value)}` : '';
+                    showStatus(`Team "${teamName}" has been created successfully${hackathonInfo}! Team ID: ${result.team_id}`, 'success');
+                    
+                    // Store team info for potential use
+                    localStorage.setItem('last_created_team_id', result.team_id);
+                    
+                    // Clear the form
+                    document.getElementById('create-team-form').reset();
+                    
+                    // Reset the max members to default
+                    document.getElementById('max-members').value = 2;
+                    
+                    // Set today's date again
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('team-deadline').setAttribute('min', today);
+                    
+                    // Redirect back to hackathons page after delay
+                    setTimeout(() => {
+                        window.location.href = 'hackathons.html';
+                    }, 3000);
+                } else {
+                    showStatus(`Failed to create team: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error creating team:', error);
+                showStatus('Failed to create team. Please check if the server is running and try again.', 'error');
+            } finally {
+                // Remove loading state
+                setLoadingState(submitBtn, false);
+            }
+        }
     </script>
 </body>
 </html>

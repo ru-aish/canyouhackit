@@ -172,7 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hackathonName = card.getAttribute('data-event');
                 window.location.href = `messageforteams.html?hackathon_id=${hackathonId}&hackathon_name=${encodeURIComponent(hackathonName)}`;
             } else if (button.classList.contains('btn-people')) {
-                window.location.href = 'createateam.html';
+                const hackathonId = card.getAttribute('data-hackathon-id');
+                const hackathonName = card.getAttribute('data-event');
+                window.location.href = `createateam.html?hackathon_id=${hackathonId}&hackathon_name=${encodeURIComponent(hackathonName)}`;
             }
             return;
         }
