@@ -33,7 +33,16 @@ The HackBite backend is a **Flask-based REST API** designed with **extensibility
   - User-skill relationship management
   - Future team matching algorithm support
 
-#### 4. **SystemManager** (`backend/database.py`)
+#### 4. **TeamManager** (`backend/database.py`)
+- **Purpose**: Team formation and management
+- **Features**:
+  - Team creation with leader assignment
+  - Team member management (join/leave)
+  - Team status tracking (forming, active, completed, disbanded)
+  - Team search and filtering capabilities
+  - Hackathon integration for event-specific teams
+
+#### 5. **SystemManager** (`backend/database.py`)
 - **Purpose**: Configuration and system settings management
 - **Features**:
   - Type-safe setting storage (string, integer, boolean, JSON)
@@ -55,10 +64,13 @@ The HackBite backend is a **Flask-based REST API** designed with **extensibility
 - **`user_skills`**: Individual skill tracking with proficiency
 - **`skill_categories`**: Organized skill taxonomy
 - **`teams`**: Team formation and management
+- **`team_members`**: Team membership relationships
 - **`hackathons`**: Multi-event support
+- **`team_requests`**: Team application requests for hackathons
 - **`activity_logs`**: Security and analytics tracking
 - **`notifications`**: User notification system
 - **`system_settings`**: Runtime configuration
+- **`user_ratings`**: AI-generated user ratings for team matching
 
 ## API Endpoints
 
@@ -77,6 +89,38 @@ GET    /api/profile-logos      # Get available avatars with SVG content
 GET    /api/statistics         # User analytics and statistics
 GET    /api/skill-categories   # Get skill taxonomy
 GET    /api/skill-categories/<id>/skills  # Skills in category
+```
+
+### Team Management
+```
+POST   /api/teams              # Create new team
+GET    /api/teams              # List teams with filtering
+GET    /api/teams/<id>         # Get specific team details
+POST   /api/teams/<id>/join    # Join a team
+POST   /api/teams/<id>/leave   # Leave a team
+PUT    /api/teams/<id>         # Update team information
+GET    /api/teams/search       # Search teams with filters
+GET    /api/teams/check-existing # Check if user already created team for hackathon
+```
+
+### Hackathon Management
+```
+GET    /api/hackathons         # List hackathons
+GET    /api/hackathons/<id>    # Get specific hackathon details
+```
+
+### Team Request System
+```
+POST   /api/team-requests      # Submit team join request for hackathon
+GET    /api/team-requests/check # Check if user already applied for hackathon
+GET    /api/team-requests      # Get team requests with filtering
+```
+
+### AI Rating System
+```
+POST   /api/rate-profile       # Rate user profile with AI
+GET    /api/user-ratings/<id>  # Get user's latest rating
+GET    /api/team-candidates    # Get potential team candidates with intelligent matching
 ```
 
 ### System Management
@@ -109,39 +153,50 @@ profile_logos = {
 - **Validation**: Backend validates avatar selection against available options
 - **Extensible**: Easy to add new avatars by updating the avatar dictionary
 
-## Future Extensibility Features
+## Enhanced Features
 
 ### 1. **Team Formation System**
 - Ready-to-use team and team_members tables
 - Leader/member role management
-- Team status tracking (forming, active, completed)
+- Team status tracking (forming, active, completed, disbanded)
 - Maximum member limits with automatic enforcement
+- Hackathon integration for event-specific teams
 
 ### 2. **Multi-Hackathon Support**
 - Dedicated hackathons table with event management
 - User participation tracking across events
 - Team assignments per hackathon
 - Scoring and ranking system
+- Team request system for hackathon applications
 
-### 3. **Skill-Based Matching**
+### 3. **Skill-Based Matching
 - Comprehensive skill taxonomy with categories
 - Proficiency level tracking (beginner to expert)
 - Years of experience per skill
 - Primary skill designation for quick matching
+- Intelligent complementary skill matching algorithm
 
-### 4. **Analytics & Monitoring**
+### 4. **AI-Powered Team Matching**
+- GitHub profile analysis and rating
+- Resume analysis and rating
+- Overall compatibility scoring (0-1000 scale)
+- Complementary skill matching algorithm
+- Category-specific AI scoring (hackathon, gaming, ICPC)
+
+### 5. **Analytics & Monitoring**
 - Complete activity logging with IP and user agent
 - User statistics with temporal analysis
 - Popular skills and avatar distribution
 - Registration trends and user engagement metrics
+- Team formation analytics
 
-### 5. **Notification System**
+### 6. **Notification System**
 - Built-in notification table with types and expiration
 - Action URLs for interactive notifications
 - Read/unread status tracking
 - User-specific notification management
 
-### 6. **System Configuration**
+### 7. **System Configuration**
 - Runtime configuration without code changes
 - Type-safe setting storage and retrieval
 - Public/private setting visibility
@@ -166,12 +221,14 @@ profile_logos = {
 - Profile modification history
 - Failed authentication monitoring
 - IP address and user agent logging
+- Team creation and membership changes tracking
 
 ### 4. **Database Security**
 - Foreign key constraints enabled
 - Transaction rollback on errors
 - Proper connection management
 - Error handling without data exposure
+- Unique constraints to prevent duplicate applications
 
 ## Installation & Setup
 
@@ -187,14 +244,14 @@ uv pip install -r requirements.txt
 ### Database Initialization
 ```bash
 # Database and tables are auto-created on first run
-cd /path/to/hackbite
-python backend/api_server.py
+cd /path/to/hackbite/1
+python run_server.py
 ```
 
 ### Development Server
 ```bash
 # Start API server
-python backend/api_server.py
+python run_server.py
 
 # Server runs on http://localhost:5000
 # CORS enabled for frontend integration
@@ -220,8 +277,31 @@ const userData = {
 // API call
 const response = await fetch(`${API_BASE_URL}/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type: application/json' },
     body: JSON.stringify(userData)
+});
+```
+
+### Team Creation Integration
+The backend supports team creation through the frontend in `/1/frontend/hackathonpage/`:
+
+```javascript
+// Frontend data collection (createateam.html)
+const teamData = {
+    team_name: document.getElementById('team_name').value,
+    description: document.getElementById('description').value,
+    leader_id: currentUserId,
+    max_members: document.getElementById('max_members').value,
+    hackathon_id: selectedHackathonId,
+    tech_stack: selectedTechnologies,
+    project_idea: document.getElementById('project_idea').value
+};
+
+// API call
+const response = await fetch(`${API_BASE_URL}/teams`, {
+    method: 'POST',
+    headers: { 'Content-Type: application/json' },
+    body: JSON.stringify(teamData)
 });
 ```
 
@@ -260,14 +340,19 @@ curl http://localhost:5000/api/users
 
 # Get avatars
 curl http://localhost:5000/api/profile-logos
+
+# Create team
+curl -X POST http://localhost:5000/api/teams \
+  -H "Content-Type: application/json" \
+  -d '{"team_name":"Test Team","description":"A test team","leader_id":1,"max_members":4}'
 ```
 
 ### Automated Testing
 ```bash
 # Run test suite
-python test/test_registration.py
+python test_team_creation.py
 
-# Or with pytest
+# Or with pytest (if available)
 pytest test/
 ```
 
@@ -277,16 +362,19 @@ pytest test/
 - **Indexes**: Created on frequently queried columns (email, user_id, etc.)
 - **Connection Pooling**: Single connection with proper lifecycle management
 - **Query Optimization**: Parameterized queries with minimal data transfer
+- **Caching**: Result caching for frequently accessed data
 
 ### API Performance
 - **CORS Optimization**: Configured for specific origins in production
 - **Error Handling**: Graceful error responses without internal details
 - **Response Caching**: Headers configured for appropriate caching
+- **Pagination**: Support for large dataset pagination
 
 ### Scalability Preparation
 - **Modular Architecture**: Easy to split into microservices
 - **Database Abstraction**: Can migrate from SQLite to PostgreSQL/MySQL
 - **Configuration Management**: Runtime settings for easy deployment
+- **Asynchronous Processing**: Background jobs for heavy operations
 
 ## Production Deployment
 
@@ -294,10 +382,13 @@ pytest test/
 ```bash
 # Set production environment
 export FLASK_ENV=production
-export DATABASE_URL=postgresql://user:pass@host:port/db
+export DATABASE_PATH=/path/to/production/database.db
 
 # Configure CORS for production
 export ALLOWED_ORIGINS=https://hackbite.com,https://app.hackbite.com
+
+# Set Gemini API key for AI ratings
+export GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### Security Recommendations
@@ -307,15 +398,17 @@ export ALLOWED_ORIGINS=https://hackbite.com,https://app.hackbite.com
 4. Set up database backups
 5. Monitor activity logs for suspicious behavior
 6. Implement rate limiting for API endpoints
+7. Use a production WSGI server (gunicorn, uWSGI)
 
 ### Monitoring
 - Health check endpoint: `/health`
 - User statistics endpoint: `/api/statistics`
 - Activity log monitoring via database queries
 - Error tracking through application logs
+- Performance metrics collection
 
 ---
 
 ## Summary
 
-The HackBite backend provides a **robust, extensible foundation** for hackathon team formation and user management. Its modular architecture and comprehensive feature set make it ready for both immediate use and future enhancements, while maintaining seamless integration with the existing frontend interface.
+The HackBite backend provides a **robust, extensible foundation** for hackathon team formation and user management. Its modular architecture and comprehensive feature set make it ready for both immediate use and future enhancements, while maintaining seamless integration with the existing frontend interface. With added support for hackathons, team requests, AI-powered matching, and intelligent team formation, it's a complete solution for hackathon organization and participant matching.

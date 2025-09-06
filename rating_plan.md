@@ -347,7 +347,7 @@ CREATE TABLE gaming_teams (
     team_description TEXT,
     creator_id INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (creator_id) REFERENCES users(id)
+    FOREIGN KEY (creator_id) REFERENCES users(user_id)
 );
 ```
 
@@ -366,7 +366,7 @@ CREATE TABLE icpc_teams (
     team_description TEXT,
     creator_id INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (creator_id) REFERENCES users(id)
+    FOREIGN KEY (creator_id) REFERENCES users(user_id)
 );
 ```
 
@@ -389,7 +389,7 @@ CREATE TABLE gaming_applications (
     application_status TEXT DEFAULT 'pending',
     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (team_id) REFERENCES gaming_teams(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 ```
 
@@ -411,7 +411,7 @@ CREATE TABLE icpc_applications (
     application_status TEXT DEFAULT 'pending',
     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (team_id) REFERENCES icpc_teams(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 ```
 
@@ -441,6 +441,28 @@ CREATE TABLE icpc_applications (
 1. **Algorithm Tuning**: Refine scoring weights based on real-world feedback
 2. **Performance Testing**: Ensure API response times under 2 seconds
 3. **User Testing**: Gather feedback on match quality and relevance
+
+## Current Implementation Status
+
+### Backend Implementation
+- **Rating Service**: Implemented in `backend/rating_service.py`
+- **API Endpoints**: Available at `/api/team-candidates` for hackathon teams
+- **Database Integration**: User ratings stored in `user_ratings` table
+- **AI Integration**: Gemini API integration for intelligent scoring
+
+### Frontend Implementation
+- **Rating Page**: Available at `frontend/homepage/rating.html`
+- **Profile Rating**: Users can upload resume and GitHub profile for AI analysis
+- **Team Matching**: Results displayed with compatibility scores and reasoning
+- **Visualization**: Scores displayed with progress bars and detailed breakdowns
+
+### Data Flow
+1. **User Submission**: Users submit GitHub profile and resume via frontend
+2. **Data Processing**: Resume text extracted, GitHub profile scraped
+3. **AI Analysis**: Data sent to Gemini API with custom prompt templates
+4. **Rating Storage**: Results stored in `user_ratings` table
+5. **Team Matching**: Leader's data compared with candidates using complementary algorithm
+6. **Results Display**: Sorted candidates shown with compatibility scores and reasoning
 
 ## Success Metrics
 
