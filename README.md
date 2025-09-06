@@ -1,5 +1,7 @@
 # HackBite - Self-Contained Backend
 
+# Video link : https://drive.google.com/drive/u/1/folders/1QxsoJDjuHptMJj3HUdTK4ztqJq1A7EZX
+
 ## 🚀 Quick Start (From `/1` Directory)
 
 ### **Start the Backend Server**
