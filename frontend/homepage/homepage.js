@@ -325,8 +325,17 @@ document.addEventListener("DOMContentLoaded", () => {
 // Load and display user ratings
 async function loadUserRatings() {
     try {
+        // Get logged-in user to fetch their specific ratings
+        const loggedInUser = getLoggedInUser();
+        let apiUrl = 'http://localhost:5000/api/get-ratings';
+        
+        // If we have a logged-in user, add their user_id to the request
+        if (loggedInUser && loggedInUser.userId) {
+            apiUrl += `?user_id=${loggedInUser.userId}`;
+        }
+        
         // Try to fetch user ratings from the backend
-        const response = await fetch('http://localhost:5000/api/get-ratings', {
+        const response = await fetch(apiUrl, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -334,15 +343,16 @@ async function loadUserRatings() {
         if (response.ok) {
             const data = await response.json();
             if (data.success && data.ratings) {
+                console.log('Loaded ratings from API:', data.ratings);
                 displayRatings(data.ratings);
                 return;
             }
         }
     } catch (error) {
-        console.log('API not available, showing default ratings');
+        console.log('API not available, showing default ratings:', error);
     }
     
-    // Show default ratings from database (since we know they exist)
+    // Show default ratings as fallback
     const defaultRatings = {
         overall_score: 700,
         github_score: 600,
@@ -367,14 +377,21 @@ function displayRatings(ratings) {
     ratingContainer.classList.remove('hidden');
     ratingContainer.style.display = 'block';
     
-    // Update scores
-    overallScore.textContent = ratings.overall_score || 700;
-    githubScore.textContent = ratings.github_score || ratings.git_score || 600;
-    resumeScore.textContent = ratings.resume_score || 750;
+    // Handle both API formats: new format uses git_score, old format uses github_score
+    const overallValue = ratings.overall_score || 700;
+    const githubValue = ratings.git_score || ratings.github_score || 600;
+    const resumeValue = ratings.resume_score || 750;
+    
+    // Update scores with actual values
+    overallScore.textContent = overallValue;
+    githubScore.textContent = githubValue;
+    resumeScore.textContent = resumeValue;
+    
+    console.log('Displaying ratings:', { overall: overallValue, github: githubValue, resume: resumeValue });
     
     // Animate circular progress
     const circumference = 2 * Math.PI * 50; // radius = 50 (updated for new size)
-    const progress = (ratings.overall_score || 700) / 1000; // Convert to percentage (0-1)
+    const progress = overallValue / 1000; // Convert to percentage (0-1)
     const offset = circumference - (progress * circumference);
     
     setTimeout(() => {
