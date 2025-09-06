@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Your Teammate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0D1117;
+            color: #C9D1D9;
+        }
+
+        /* New SVG-based styles for circular progress */
+        .progress-ring {
+            stroke-dasharray: var(--circumference);
+            stroke-dashoffset: var(--circumference);
+            /* Start empty */
+            animation: progress-fill 1.5s ease-out forwards;
+        }
+
+        @keyframes progress-fill {
+            to {
+                stroke-dashoffset: var(--offset);
+            }
+        }
+
+        /* Styles for the modal */
+        .modal-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <!-- Header Navigation -->
+    <nav class="bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <!-- Logo Placeholder -->
+                    <svg class="h-8 w-8 text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21v-1a6 6 0 00-5.197-5.975M15 15a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span class="text-xl font-bold text-white">TeamUp</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="#"
+                        class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-white mb-2">Find Your Next Teammate</h1>
+            <p class="text-lg text-gray-400">Discover talented individuals with skills that complement yours.</p>
+        </div>
+
+        <div id="leader-info-bar"
+            class="bg-gray-800/50 rounded-lg p-4 mb-8 flex flex-col sm:flex-row justify-center items-center gap-4 text-center border border-gray-700">
+            <!-- Leader's score will be injected here -->
+        </div>
+
+        <!-- Filtering and Sorting Controls -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 px-2">
+            <div id="candidate-count" class="text-gray-400 mb-4 md:mb-0">
+                <!-- Candidate count will be injected here -->
+            </div>
+            <div class="flex items-center gap-2 bg-gray-900 border border-gray-700 p-1 rounded-lg">
+                <span class="text-sm font-medium text-gray-300 pr-2 pl-2">Sort by:</span>
+                <button data-sort="overall"
+                    class="sort-btn bg-sky-500 text-white px-4 py-1.5 text-sm font-semibold rounded-md shadow-sm transition-colors">Overall</button>
+                <button data-sort="github"
+                    class="sort-btn text-gray-300 hover:bg-gray-700 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors">GitHub</button>
+                <button data-sort="resume"
+                    class="sort-btn text-gray-300 hover:bg-gray-700 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors">Resume</button>
+            </div>
+        </div>
+
+        <!-- Candidate Grid (Vertical Scrolling) -->
+        <div id="candidate-grid" class="grid grid-cols-1 max-w-4xl mx-auto gap-6">
+            <!-- Candidate cards will be dynamically injected here -->
+        </div>
+
+        <div id="no-candidates-message" class="hidden text-center py-16">
+            <h3 class="text-2xl font-semibold text-white">No Matching Candidates Found</h3>
+            <p class="text-gray-400 mt-2">Try adjusting your desired skills or check back later.</p>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="invite-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div id="modal-overlay" class="modal-overlay fixed inset-0 bg-black/70 opacity-0"></div>
+        <div id="modal-content"
+            class="modal-content bg-[#161b22] border border-gray-700 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 transform scale-95">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-white mt-4" id="modal-title">Invitation Sent!</h3>
+                <div class="mt-2">
+                    <p class="text-sm text-gray-400" id="modal-text">Your invitation has been successfully sent.</p>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-6">
+                <button id="modal-close-btn" type="button"
+                    class="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-sky-600 text-base font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:text-sm">
+                    Got it, thanks!
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- MOCK DATA ---
+            const teamLeader = {
+                name: 'Alex Ray',
+                overallScore: 750,
+                desiredSkills: ['UI/UX Design', 'Frontend Development', 'Project Management']
+            };
+            const allCandidates = [
+                { id: 'user_1', name: 'Rudra Patel', role: 'Team Builder | Full Stack', description: 'Passionate full-stack developer with a love for creating intuitive user experiences and scalable backend solutions. Eager to join a collaborative team.', available: true, overallScore: 785, githubScore: 820, resumeScore: 750, skills: ['Frontend Development', 'Video Editing', 'Content Writing', 'IoT & Embedded Systems'] },
+                { id: 'user_2', name: 'Samantha Bee', role: 'UX Specialist', description: 'I translate complex problems into beautiful, human-centered designs. My expertise lies in user research and rapid prototyping.', available: true, overallScore: 810, githubScore: 700, resumeScore: 920, skills: ['UI/UX Design', 'User Research', 'Figma', 'Prototyping'] },
+                { id: 'user_3', name: 'Mike Chen', role: 'Backend Developer', description: 'Building robust and efficient server-side logic is my specialty. Proficient in Node.js, Python, and various database technologies.', available: false, overallScore: 700, githubScore: 850, resumeScore: 550, skills: ['Node.js', 'Python', 'Database Management', 'API Design'] },
+                { id: 'user_4', name: 'Jessica Yuan', role: 'Project Manager', description: 'An organized and agile project manager who thrives on leading teams to success and delivering high-quality products on time.', available: true, overallScore: 720, githubScore: 600, resumeScore: 840, skills: ['Project Management', 'Agile Methodologies', 'Scrum', 'Team Leadership'] },
+            ];
+
+            // --- STATE MANAGEMENT ---
+            let currentSortCriteria = 'overall';
+            let eligibleCandidates = [];
+
+            // --- DOM ELEMENTS ---
+            const leaderInfoBar = document.getElementById('leader-info-bar');
+            const grid = document.getElementById('candidate-grid');
+            const countDisplay = document.getElementById('candidate-count');
+            const sortButtons = document.querySelectorAll('.sort-btn');
+            const noCandidatesMessage = document.getElementById('no-candidates-message');
+            const inviteModal = document.getElementById('invite-modal');
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalContent = document.getElementById('modal-content');
+            const modalText = document.getElementById('modal-text');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            // --- CORE LOGIC ---
+            function initialize() {
+                displayLeaderInfo();
+                filterCandidates();
+                sortAndRenderCandidates();
+                setupEventListeners();
+            }
+
+            function displayLeaderInfo() {
+                const score = teamLeader.overallScore;
+                const lowerBound = Math.round(score * 0.9);
+                const upperBound = Math.round(score * 1.1);
+                leaderInfoBar.innerHTML = `
+                    <div class="flex flex-col"><span class="text-sm text-gray-400">Your Overall Score</span><span class="text-2xl font-bold text-white">${score}</span></div>
+                    <div class="border-l-2 border-gray-600 h-10 hidden sm:block"></div>
+                    <div class="flex flex-col"><span class="text-sm text-gray-400">Recruiting Score Range</span><span class="text-2xl font-bold text-sky-400">${lowerBound} - ${upperBound}</span></div>`;
+            }
+
+            function filterCandidates() {
+                const lowerBound = teamLeader.overallScore * 0.9;
+                const upperBound = teamLeader.overallScore * 1.1;
+                eligibleCandidates = allCandidates.filter(c => c.overallScore >= lowerBound && c.overallScore <= upperBound);
+            }
+
+            function sortAndRenderCandidates() {
+                const sortKey = `${currentSortCriteria}Score`;
+                const sortedCandidates = [...eligibleCandidates].sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+                renderCandidates(sortedCandidates);
+                updateCount(sortedCandidates.length);
+            }
+
+            function renderCandidates(candidates) {
+                if (candidates.length === 0) {
+                    grid.innerHTML = '';
+                    noCandidatesMessage.classList.remove('hidden');
+                    return;
+                }
+                noCandidatesMessage.classList.add('hidden');
+                grid.innerHTML = candidates.map(candidate => createCardHTML(candidate)).join('');
+            }
+
+            function createCardHTML(candidate) {
+                const availabilityClass = candidate.available ? 'bg-green-500' : 'bg-gray-500';
+                const availabilityText = candidate.available ? 'Available' : 'Unavailable';
+
+                const skillsHTML = candidate.skills.map(skill => {
+                    const isComplementary = teamLeader.desiredSkills.includes(skill);
+                    const skillClass = isComplementary
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                        : 'bg-gray-700/50 text-gray-300 border-gray-700/80';
+                    return `<span class="inline-block px-3 py-1 text-xs font-medium rounded-full border ${skillClass}">${skill}</span>`;
+                }).join('');
+
+                const overallProgress = Math.round((candidate.overallScore / 1000) * 100);
+                const githubProgress = Math.round((candidate.githubScore / 1000) * 100);
+                const resumeProgress = Math.round((candidate.resumeScore / 1000) * 100);
+
+                return `
+                    <div class="bg-[#161b22] border border-gray-800 rounded-2xl p-6 transition-all duration-300 hover:border-sky-500 hover:shadow-2xl hover:shadow-sky-500/10">
+                        <div class="flex justify-between items-start gap-6">
+                            <!-- Left: Main Info -->
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center">
+                                    <h2 class="text-2xl font-bold text-white">${candidate.name}</h2>
+                                    <div class="flex items-center gap-2 text-sm md:hidden"><span>${availabilityText}</span><div class="w-3 h-3 rounded-full ${availabilityClass}"></div></div>
+                                </div>
+                                <p class="text-md text-gray-300">${candidate.role}</p>
+                                <p class="text-sm text-gray-400 mt-3">${candidate.description}</p>
+                            </div>
+                            <!-- Right: Ratings -->
+                            <div class="flex items-start gap-4">
+                                ${createRadialProgress(overallProgress, candidate.overallScore, 'Overall', getProgressColor(candidate.overallScore))}
+                                ${createRadialProgress(githubProgress, candidate.githubScore, 'GitHub', '#38bdf8')}
+                                ${createRadialProgress(resumeProgress, candidate.resumeScore, 'Resume', '#c084fc')}
+                                <div class="hidden md:flex items-center gap-2 text-sm ml-4"><span>${availabilityText}</span><div class="w-3 h-3 rounded-full ${availabilityClass}"></div></div>
+                            </div>
+                        </div>
+                        <div class="mt-6 border-t border-gray-800 pt-4"><h3 class="text-sm font-semibold uppercase text-gray-400 mb-3">Core Skills</h3><div class="flex flex-wrap gap-2">${skillsHTML}</div></div>
+                        <div class="mt-6 flex gap-3">
+                            <button class="w-full text-center py-2.5 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg text-white font-semibold transition-colors">View Profile</button>
+                            <button class="invite-btn w-full text-center py-2.5 bg-sky-600 hover:bg-sky-500 rounded-lg text-white font-semibold transition-colors" data-candidate-name="${candidate.name}">Send Invite</button>
+                        </div>
+                    </div>`;
+            }
+
+            function createRadialProgress(value, score, label, color) {
+                const size = 80; const strokeWidth = 7; const radius = size / 2 - strokeWidth / 2; const circumference = 2 * Math.PI * radius; const offset = circumference - (value / 100) * circumference;
+                return `<div class="relative" style="width:${size}px; height:${size}px;"><svg class="w-full h-full" viewBox="0 0 ${size} ${size}"><circle class="text-gray-700" stroke="currentColor" stroke-width="${strokeWidth}" fill="transparent" r="${radius}" cx="${size / 2}" cy="${size / 2}"/><circle class="progress-ring transform -rotate-90 origin-center" style="stroke: ${color}; --circumference: ${circumference}; --offset: ${offset};" stroke-linecap="round" stroke-width="${strokeWidth}" fill="transparent" r="${radius}" cx="${size / 2}" cy="${size / 2}"/></svg><div class="absolute inset-0 flex flex-col items-center justify-center"><span class="text-2xl font-bold text-white">${score}</span><p class="text-[10px] text-gray-400 -mt-1 uppercase">${label}</p></div></div>`;
+            }
+
+            function updateCount(count) {
+                countDisplay.innerHTML = `<span class="font-semibold text-white">${count}</span> matching candidates found`;
+            }
+
+            function setupEventListeners() {
+                sortButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        currentSortCriteria = e.target.dataset.sort;
+                        sortButtons.forEach(btn => {
+                            btn.classList.remove('bg-sky-500', 'text-white');
+                            btn.classList.add('text-gray-300', 'hover:bg-gray-700');
+                        });
+                        e.target.classList.add('bg-sky-500', 'text-white');
+                        e.target.classList.remove('text-gray-300', 'hover:bg-gray-700');
+                        sortAndRenderCandidates();
+                    });
+                });
+
+                // Event listener for invite buttons using event delegation
+                grid.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('invite-btn')) {
+                        const button = e.target;
+                        const candidateName = button.dataset.candidateName;
+
+                        // Update button state
+                        button.textContent = 'Invite Sent ✓';
+                        button.disabled = true;
+                        button.classList.remove('bg-sky-600', 'hover:bg-sky-500');
+                        button.classList.add('bg-green-600', 'cursor-not-allowed');
+
+                        // Show modal
+                        showModal(candidateName);
+                    }
+                });
+
+                // Event listeners for closing the modal
+                modalOverlay.addEventListener('click', hideModal);
+                modalCloseBtn.addEventListener('click', hideModal);
+            }
+
+            function showModal(candidateName) {
+                modalText.textContent = `Your invitation has been successfully sent to ${candidateName}.`;
+                inviteModal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalOverlay.classList.remove('opacity-0');
+                    modalContent.classList.remove('scale-95');
+                }, 10);
+            }
+
+            function hideModal() {
+                modalOverlay.classList.add('opacity-0');
+                modalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    inviteModal.classList.add('hidden');
+                }, 300); // Wait for transition to finish
+            }
+
+            function getProgressColor(score) {
+                if (score > 800) return '#22c55e';
+                if (score > 650) return '#38bdf8';
+                return '#f97316';
+            }
+
+            initialize();
+        });
+    </script>
+</body>
+
+</html>
