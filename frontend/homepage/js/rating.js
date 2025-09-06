@@ -1,3 +1,33 @@
+// Function to get logged-in user session (same as homepage)
+function getLoggedInUser() {
+    const sessionData = localStorage.getItem('userSession') || sessionStorage.getItem('userSession');
+    
+    if (sessionData) {
+        try {
+            const session = JSON.parse(sessionData);
+            const loginTime = new Date(session.loginTime);
+            const now = new Date();
+            const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+            
+            // Check if session is still valid (within 24 hours for localStorage, always valid for sessionStorage)
+            const isLocalStorage = localStorage.getItem('userSession');
+            if (!isLocalStorage || hoursSinceLogin < 24) {
+                return session;
+            } else {
+                // Session expired, clear it
+                localStorage.removeItem('userSession');
+                return null;
+            }
+        } catch (error) {
+            console.error('Error parsing session data:', error);
+            localStorage.removeItem('userSession');
+            sessionStorage.removeItem('userSession');
+            return null;
+        }
+    }
+    return null;
+}
+
 document.getElementById('rating-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 
@@ -21,9 +51,13 @@ document.getElementById('rating-form').addEventListener('submit', async function
     reader.onload = async () => {
         const resumeBase64 = reader.result.split(',')[1]; // Get only the base64 part
 
+        // Get current user session to include user_id
+        const userSession = getLoggedInUser();
+        
         const profileData = {
             githubUsername,
             resumeBase64, // Send resume as a base64 encoded string
+            user_id: userSession ? userSession.userId : null // Include logged-in user ID
         };
 
         try {
