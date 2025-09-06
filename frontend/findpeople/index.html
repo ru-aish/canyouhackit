@@ -582,17 +582,41 @@
             }
             
             function getCurrentUser() {
-                // Get from localStorage or session
-                const userData = localStorage.getItem('currentUser');
-                if (userData) {
-                    return JSON.parse(userData);
+                // Use same session management as Homepage
+                const sessionData = localStorage.getItem('userSession') || sessionStorage.getItem('userSession');
+                
+                if (sessionData) {
+                    try {
+                        const session = JSON.parse(sessionData);
+                        const loginTime = new Date(session.loginTime);
+                        const now = new Date();
+                        const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+                        
+                        // Check if session is still valid (within 24 hours for localStorage, always valid for sessionStorage)
+                        const isLocalStorage = localStorage.getItem('userSession');
+                        if (!isLocalStorage || hoursSinceLogin < 24) {
+                            // Return in format expected by Find People page
+                            return {
+                                user_id: session.userId,
+                                name: session.name || 'User'
+                            };
+                        } else {
+                            // Session expired, clear it
+                            localStorage.removeItem('userSession');
+                            return null;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing session data:', error);
+                        localStorage.removeItem('userSession');
+                        sessionStorage.removeItem('userSession');
+                        return null;
+                    }
                 }
                 
-                // Default test user that has ratings and will show candidates
-                return {
-                    user_id: 22,
-                    name: 'Test Leader'
-                };
+                // No valid session - redirect to login instead of using fallback
+                console.log('No valid session found in Find People, redirecting to login');
+                window.location.href = '../login/signin.html';
+                return null;
             }
             
             function showError(message) {
