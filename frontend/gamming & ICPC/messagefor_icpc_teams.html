@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message ICPC Teams | TeamUp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-2xl mx-auto p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-10">
+            <!-- Header with Logo -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center bg-green-600 w-16 h-16 rounded-full mb-4">
+                    <!-- Code Icon -->
+                    <svg class="w-10 h-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-white">Message ICPC Teams You'd Like to Join</h1>
+                <p class="text-gray-400 mt-2">Showcase your competitive programming skills and problem-solving expertise.</p>
+            </div>
+            
+            <form id="message-form" class="space-y-6">
+                <!-- Hidden fields for event info -->
+                <input type="hidden" id="event-id" name="event_id">
+                <input type="hidden" id="event-name" name="event_name">
+                
+                <!-- Event Info Display -->
+                <div id="event-info" class="bg-gray-700 rounded-lg p-4 mb-4 hidden">
+                    <h3 class="text-lg font-semibold text-green-400 mb-2">Applying for teams in:</h3>
+                    <p id="event-display-name" class="text-white"></p>
+                </div>
+                
+                <!-- User Email (for identification) -->
+                <div>
+                    <label for="user-email" class="block mb-2 text-sm font-medium text-gray-300">Your Email</label>
+                    <input type="email" id="user-email" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-green-500 focus:border-green-500 placeholder-gray-400" placeholder="your.email@example.com" required>
+                </div>
+
+                <!-- Coding Profiles -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="codeforces-handle" class="block mb-2 text-sm font-medium text-gray-300">Codeforces Handle</label>
+                        <input type="text" id="codeforces-handle" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-green-500 focus:border-green-500 placeholder-gray-400" placeholder="Your CF handle">
+                    </div>
+                    <div>
+                        <label for="leetcode-handle" class="block mb-2 text-sm font-medium text-gray-300">LeetCode Handle</label>
+                        <input type="text" id="leetcode-handle" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-green-500 focus:border-green-500 placeholder-gray-400" placeholder="Your LC handle">
+                    </div>
+                </div>
+
+                <!-- Programming Experience -->
+                <div>
+                    <label for="programming-experience" class="block mb-2 text-sm font-medium text-gray-300">Competitive Programming Experience</label>
+                    <select id="programming-experience" class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-3" required>
+                        <option value="">Select your experience level</option>
+                        <option value="beginner">Beginner - New to competitive programming</option>
+                        <option value="intermediate">Intermediate - Regular contest participation</option>
+                        <option value="advanced">Advanced - High ratings, contest winner</option>
+                        <option value="expert">Expert - Regional/World Finals experience</option>
+                    </select>
+                </div>
+
+                <!-- Programming Languages -->
+                <div>
+                    <label for="programming-languages" class="block mb-2 text-sm font-medium text-gray-300">Preferred Programming Languages</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="languages" value="cpp" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-600 bg-gray-700 rounded">
+                            <span class="ml-2 text-sm text-gray-300">C++</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="languages" value="java" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-600 bg-gray-700 rounded">
+                            <span class="ml-2 text-sm text-gray-300">Java</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="languages" value="python" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-600 bg-gray-700 rounded">
+                            <span class="ml-2 text-sm text-gray-300">Python</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="languages" value="c" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-600 bg-gray-700 rounded">
+                            <span class="ml-2 text-sm text-gray-300">C</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="languages" value="kotlin" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-600 bg-gray-700 rounded">
+                            <span class="ml-2 text-sm text-gray-300">Kotlin</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="languages" value="other" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-600 bg-gray-700 rounded">
+                            <span class="ml-2 text-sm text-gray-300">Other</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Strengths -->
+                <div>
+                    <label for="algorithmic-strengths" class="block mb-2 text-sm font-medium text-gray-300">Algorithmic Strengths</label>
+                    <input type="text" id="algorithmic-strengths" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-green-500 focus:border-green-500 placeholder-gray-400" placeholder="e.g., Dynamic Programming, Graph Theory, Data Structures, Math" required>
+                </div>
+
+                <!-- Current Rating -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="current-rating" class="block mb-2 text-sm font-medium text-gray-300">Current Highest Rating</label>
+                        <input type="number" id="current-rating" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-green-500 focus:border-green-500 placeholder-gray-400" placeholder="e.g., 1400">
+                    </div>
+                    <div>
+                        <label for="target-rating" class="block mb-2 text-sm font-medium text-gray-300">Target Rating</label>
+                        <input type="number" id="target-rating" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-green-500 focus:border-green-500 placeholder-gray-400" placeholder="e.g., 1800">
+                    </div>
+                </div>
+
+                <!-- Message Body -->
+                <div>
+                    <label for="message-body" class="block mb-2 text-sm font-medium text-gray-300">Your Message to ICPC Teams</label>
+                    <textarea id="message-body" rows="8" class="block p-4 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-green-500 focus:border-green-500 placeholder-gray-400" placeholder="Hi! I'm interested in joining an ICPC team for [Event/Contest]. My primary strengths are in [Your Strengths, e.g., Dynamic Programming, Graph Algorithms], and I'm currently rated [Rating] on [Platform]. I'm available for [practice schedule] and my goal is to [Your Goal, e.g., advance to regionals, improve problem-solving speed]. My approach to contests includes..." required></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submit-btn" class="w-full text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">
+                    Send Message to ICPC Teams
+                </button>
+                
+                <!-- Status Messages -->
+                <div id="status-message" class="hidden p-4 rounded-lg text-center"></div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000';
+        
+        // Function to get selected languages
+        function getSelectedLanguages() {
+            const checkboxes = document.querySelectorAll('input[name="languages"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event_id');
+            const eventName = urlParams.get('event_name');
+            
+            // Check if user already applied for this event
+            if (eventId) {
+                document.getElementById('event-id').value = eventId;
+                document.getElementById('event-name').value = eventName;
+                
+                if (eventName) {
+                    document.getElementById('event-display-name').textContent = decodeURIComponent(eventName);
+                    document.getElementById('event-info').classList.remove('hidden');
+                }
+                
+                // Check if user already applied
+                checkExistingApplication(eventId);
+            }
+            
+            const form = document.getElementById('message-form');
+            form.addEventListener('submit', handleSubmit);
+        });
+        
+        async function checkExistingApplication(eventId) {
+            const userEmail = localStorage.getItem('userEmail');
+            if (!userEmail) return;
+            
+            // Pre-fill email if stored
+            document.getElementById('user-email').value = userEmail;
+            
+            try {
+                // For now, we'll use a placeholder API endpoint for ICPC teams
+                const response = await fetch(`${API_BASE_URL}/api/icpc-team-requests/check?event_id=${eventId}&email=${encodeURIComponent(userEmail)}`);
+                const data = await response.json();
+                
+                if (data.success && data.exists) {
+                    showStatus('You have already submitted a request for this ICPC event!', 'warning');
+                    document.getElementById('submit-btn').disabled = true;
+                    document.getElementById('submit-btn').textContent = 'Already Applied';
+                    document.getElementById('submit-btn').classList.add('bg-gray-600', 'cursor-not-allowed');
+                    document.getElementById('submit-btn').classList.remove('bg-green-600', 'hover:bg-green-700');
+                }
+            } catch (error) {
+                console.log('Could not check existing application:', error);
+            }
+        }
+        
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            const selectedLanguages = getSelectedLanguages();
+            
+            const formData = {
+                event_id: document.getElementById('event-id').value,
+                event_name: document.getElementById('event-name').value,
+                user_email: document.getElementById('user-email').value.trim(),
+                codeforces_handle: document.getElementById('codeforces-handle').value.trim(),
+                leetcode_handle: document.getElementById('leetcode-handle').value.trim(),
+                programming_experience: document.getElementById('programming-experience').value,
+                programming_languages: selectedLanguages,
+                algorithmic_strengths: document.getElementById('algorithmic-strengths').value.trim(),
+                current_rating: document.getElementById('current-rating').value,
+                target_rating: document.getElementById('target-rating').value,
+                message: document.getElementById('message-body').value.trim(),
+                category: 'icpc'
+            };
+            
+            if (!formData.user_email || !formData.programming_experience || !formData.algorithmic_strengths || !formData.message) {
+                showStatus('Please fill in all required fields.', 'error');
+                return;
+            }
+            
+            if (selectedLanguages.length === 0) {
+                showStatus('Please select at least one programming language.', 'error');
+                return;
+            }
+            
+            // Store email for future use
+            localStorage.setItem('userEmail', formData.user_email);
+            
+            // Show loading
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            
+            try {
+                // For now, we'll show success message (placeholder for future backend integration)
+                setTimeout(() => {
+                    showStatus('Your ICPC team application has been sent successfully!', 'success');
+                    document.getElementById('message-form').reset();
+                    
+                    // Redirect after success
+                    setTimeout(() => {
+                        window.location.href = 'icpc.html';
+                    }, 2000);
+                }, 1000);
+
+                // Future API integration:
+                /*
+                const response = await fetch(`${API_BASE_URL}/api/icpc-team-requests`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('Your message has been sent successfully!', 'success');
+                    document.getElementById('message-form').reset();
+                    
+                    // Redirect after success
+                    setTimeout(() => {
+                        window.location.href = 'icpc.html';
+                    }, 2000);
+                } else {
+                    showStatus(data.message || 'Failed to send message. Please try again.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Message to ICPC Teams';
+                }
+                */
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showStatus('Network error. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message to ICPC Teams';
+            }
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden', 'bg-green-600', 'bg-red-600', 'bg-yellow-600');
+            
+            switch (type) {
+                case 'success':
+                    statusDiv.classList.add('bg-green-600');
+                    break;
+                case 'error':
+                    statusDiv.classList.add('bg-red-600');
+                    break;
+                case 'warning':
+                    statusDiv.classList.add('bg-yellow-600');
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>

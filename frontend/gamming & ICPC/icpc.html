@@ -108,9 +108,13 @@
                             window.open(`https://www.google.com/search?q=${encodeURIComponent(eventName)}`, '_blank');
                         }
                     } else if (button.classList.contains('btn-teams')) {
-                        alert(`Looking for teams for: ${eventName}`);
+                        // Redirect to ICPC teams search page
+                        const eventId = Math.random().toString(36).substr(2, 9); // Generate temporary ID
+                        window.location.href = `messagefor_icpc_teams.html?event_id=${eventId}&event_name=${encodeURIComponent(eventName)}`;
                     } else if (button.classList.contains('btn-people')) {
-                        window.location.href = 'create_team.html';
+                        // Create team for this ICPC event
+                        const eventId = Math.random().toString(36).substr(2, 9); // Generate temporary ID
+                        window.location.href = `create_icpc_team.html?event_id=${eventId}&event_name=${encodeURIComponent(eventName)}`;
                     }
                     return;
                 }

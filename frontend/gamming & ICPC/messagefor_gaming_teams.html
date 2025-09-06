@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Gaming Teams | TeamUp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-2xl mx-auto p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-10">
+            <!-- Header with Logo -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center bg-red-600 w-16 h-16 rounded-full mb-4">
+                    <!-- Gaming Controller Icon -->
+                    <svg class="w-10 h-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.375l-.66.375a3.064 3.064 0 01-1.65.1 18.179 18.179 0 00-2.505-.2m1.65.1l.375-.66a23.906 23.906 0 011.95-3.055" />
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-white">Message Gaming Teams You'd Like to Join</h1>
+                <p class="text-gray-400 mt-2">Showcase your gaming skills and explain why you'd be a perfect teammate.</p>
+            </div>
+            
+            <form id="message-form" class="space-y-6">
+                <!-- Hidden fields for event info -->
+                <input type="hidden" id="event-id" name="event_id">
+                <input type="hidden" id="event-name" name="event_name">
+                
+                <!-- Event Info Display -->
+                <div id="event-info" class="bg-gray-700 rounded-lg p-4 mb-4 hidden">
+                    <h3 class="text-lg font-semibold text-red-400 mb-2">Applying for teams in:</h3>
+                    <p id="event-display-name" class="text-white"></p>
+                </div>
+                
+                <!-- User Email (for identification) -->
+                <div>
+                    <label for="user-email" class="block mb-2 text-sm font-medium text-gray-300">Your Email</label>
+                    <input type="email" id="user-email" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-red-500 focus:border-red-500 placeholder-gray-400" placeholder="your.email@example.com" required>
+                </div>
+
+                <!-- Gaming Handle/Username -->
+                <div>
+                    <label for="gaming-handle" class="block mb-2 text-sm font-medium text-gray-300">Gaming Handle/Username</label>
+                    <input type="text" id="gaming-handle" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-red-500 focus:border-red-500 placeholder-gray-400" placeholder="Your in-game name" required>
+                </div>
+
+                <!-- Gaming Experience -->
+                <div>
+                    <label for="gaming-experience" class="block mb-2 text-sm font-medium text-gray-300">Gaming Experience Level</label>
+                    <select id="gaming-experience" class="bg-gray-700 border border-gray-600 text-white text-md rounded-lg focus:ring-red-500 focus:border-red-500 block w-full p-3" required>
+                        <option value="">Select your experience level</option>
+                        <option value="casual">Casual - Playing for fun</option>
+                        <option value="intermediate">Intermediate - Regular competitive play</option>
+                        <option value="advanced">Advanced - Tournament experience</option>
+                        <option value="professional">Professional - Esports career</option>
+                    </select>
+                </div>
+
+                <!-- Preferred Games -->
+                <div>
+                    <label for="preferred-games" class="block mb-2 text-sm font-medium text-gray-300">Preferred Games/Genres</label>
+                    <input type="text" id="preferred-games" class="block p-3 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-red-500 focus:border-red-500 placeholder-gray-400" placeholder="e.g., Valorant, BGMI, CS:GO, League of Legends" required>
+                </div>
+
+                <!-- Message Body -->
+                <div>
+                    <label for="message-body" class="block mb-2 text-sm font-medium text-gray-300">Your Message to Teams</label>
+                    <textarea id="message-body" rows="8" class="block p-4 w-full text-md text-white bg-gray-700 rounded-lg border border-gray-600 focus:ring-red-500 focus:border-red-500 placeholder-gray-400" placeholder="Hi! I'm looking to join a competitive gaming team for [Game/Event]. My main role is [Your Role, e.g., IGL, Fragger, Support], and I have [X years] of experience. I'm available for [practice schedule] and my goal is to [Your Goal, e.g., win tournaments, improve skills, compete at high level]. My strengths include..." required></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submit-btn" class="w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-800 font-medium rounded-lg text-md px-5 py-4 text-center transition">
+                    Send Message to Gaming Teams
+                </button>
+                
+                <!-- Status Messages -->
+                <div id="status-message" class="hidden p-4 rounded-lg text-center"></div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event_id');
+            const eventName = urlParams.get('event_name');
+            
+            // Check if user already applied for this event
+            if (eventId) {
+                document.getElementById('event-id').value = eventId;
+                document.getElementById('event-name').value = eventName;
+                
+                if (eventName) {
+                    document.getElementById('event-display-name').textContent = decodeURIComponent(eventName);
+                    document.getElementById('event-info').classList.remove('hidden');
+                }
+                
+                // Check if user already applied
+                checkExistingApplication(eventId);
+            }
+            
+            const form = document.getElementById('message-form');
+            form.addEventListener('submit', handleSubmit);
+        });
+        
+        async function checkExistingApplication(eventId) {
+            const userEmail = localStorage.getItem('userEmail');
+            if (!userEmail) return;
+            
+            // Pre-fill email if stored
+            document.getElementById('user-email').value = userEmail;
+            
+            try {
+                // For now, we'll use a placeholder API endpoint for gaming teams
+                const response = await fetch(`${API_BASE_URL}/api/gaming-team-requests/check?event_id=${eventId}&email=${encodeURIComponent(userEmail)}`);
+                const data = await response.json();
+                
+                if (data.success && data.exists) {
+                    showStatus('You have already submitted a request for this gaming event!', 'warning');
+                    document.getElementById('submit-btn').disabled = true;
+                    document.getElementById('submit-btn').textContent = 'Already Applied';
+                    document.getElementById('submit-btn').classList.add('bg-gray-600', 'cursor-not-allowed');
+                    document.getElementById('submit-btn').classList.remove('bg-red-600', 'hover:bg-red-700');
+                }
+            } catch (error) {
+                console.log('Could not check existing application:', error);
+            }
+        }
+        
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            const formData = {
+                event_id: document.getElementById('event-id').value,
+                event_name: document.getElementById('event-name').value,
+                user_email: document.getElementById('user-email').value.trim(),
+                gaming_handle: document.getElementById('gaming-handle').value.trim(),
+                gaming_experience: document.getElementById('gaming-experience').value,
+                preferred_games: document.getElementById('preferred-games').value.trim(),
+                message: document.getElementById('message-body').value.trim(),
+                category: 'gaming'
+            };
+            
+            if (!formData.user_email || !formData.gaming_handle || !formData.gaming_experience || !formData.preferred_games || !formData.message) {
+                showStatus('Please fill in all required fields.', 'error');
+                return;
+            }
+            
+            // Store email for future use
+            localStorage.setItem('userEmail', formData.user_email);
+            
+            // Show loading
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            
+            try {
+                // For now, we'll show success message (placeholder for future backend integration)
+                setTimeout(() => {
+                    showStatus('Your gaming team application has been sent successfully!', 'success');
+                    document.getElementById('message-form').reset();
+                    
+                    // Redirect after success
+                    setTimeout(() => {
+                        window.location.href = 'gaming.html';
+                    }, 2000);
+                }, 1000);
+
+                // Future API integration:
+                /*
+                const response = await fetch(`${API_BASE_URL}/api/gaming-team-requests`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('Your message has been sent successfully!', 'success');
+                    document.getElementById('message-form').reset();
+                    
+                    // Redirect after success
+                    setTimeout(() => {
+                        window.location.href = 'gaming.html';
+                    }, 2000);
+                } else {
+                    showStatus(data.message || 'Failed to send message. Please try again.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Message to Gaming Teams';
+                }
+                */
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showStatus('Network error. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message to Gaming Teams';
+            }
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden', 'bg-green-600', 'bg-red-600', 'bg-yellow-600');
+            
+            switch (type) {
+                case 'success':
+                    statusDiv.classList.add('bg-green-600');
+                    break;
+                case 'error':
+                    statusDiv.classList.add('bg-red-600');
+                    break;
+                case 'warning':
+                    statusDiv.classList.add('bg-yellow-600');
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
