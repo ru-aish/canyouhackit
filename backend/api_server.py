@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from database import DatabaseManager, UserManager, SkillManager, SystemManager, TeamManager
-from rating_service import RatingService
+from backend.database import DatabaseManager, UserManager, SkillManager, SystemManager, TeamManager
+from backend.rating_service import RatingService
 import json
 import base64
 import io
@@ -10,6 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import sqlite3
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -1263,7 +1264,264 @@ def get_ratings():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-if __name__ == '__main__':
+
+@app.route('/api/team-candidates', methods=['GET'])
+def get_team_candidates():
+    """Get potential team candidates with intelligent complementary skill matching"""
+    try:
+        # Get query parameters
+        leader_user_id = request.args.get('leader_id', type=int)
+        sort_by = request.args.get('sort_by', 'complementary')  # complementary, overall, git, resume
+        limit = request.args.get('limit', 50, type=int)
+        
+        if not leader_user_id:
+            return jsonify({"success": False, "message": "Leader user ID is required"}), 400
+        
+        # Enhanced complementary skills mapping
+        COMPLEMENTARY_SKILLS = {
+            'React': ['Node.js', 'Backend Development', 'UI/UX Design', 'DevOps', 'TypeScript'],
+            'Node.js': ['React', 'Frontend Development', 'Database Management', 'AWS', 'Docker'],
+            'Python': ['Frontend Development', 'DevOps', 'Database Management', 'React', 'JavaScript'],
+            'JavaScript': ['Backend Development', 'Python', 'Database Management', 'UI/UX Design'],
+            'Frontend Development': ['Backend Development', 'UI/UX Design', 'DevOps', 'Database Management'],
+            'Backend Development': ['Frontend Development', 'DevOps', 'Database Management', 'Cloud Computing'],
+            'Full Stack Development': ['DevOps', 'UI/UX Design', 'Cloud Computing', 'Product Management'],
+            'AI/ML': ['Data Engineering', 'Backend Development', 'Python', 'DevOps', 'Cloud Computing'],
+            'Machine Learning': ['Data Engineering', 'Backend Development', 'Python', 'DevOps', 'Frontend Development'],
+            'Cybersecurity': ['DevOps', 'Network Administration', 'Backend Development', 'Cloud Computing'],
+            'Data Science': ['Data Engineering', 'Backend Development', 'AI/ML', 'Python'],
+            'DevOps': ['Backend Development', 'Frontend Development', 'Cloud Computing', 'Cybersecurity'],
+            'UI/UX Design': ['Frontend Development', 'Product Management', 'Full Stack Development'],
+            'Database Management': ['Backend Development', 'DevOps', 'Data Engineering'],
+            'Cloud Computing': ['DevOps', 'Backend Development', 'Cybersecurity'],
+            'Docker': ['DevOps', 'Backend Development', 'Cloud Computing'],
+            'AWS': ['DevOps', 'Backend Development', 'Cloud Computing'],
+            'Django': ['Frontend Development', 'DevOps', 'Database Management'],
+            'PostgreSQL': ['Backend Development', 'Data Engineering', 'DevOps'],
+            'MongoDB': ['Backend Development', 'Full Stack Development', 'DevOps'],
+            'TypeScript': ['Frontend Development', 'Backend Development', 'Full Stack Development'],
+            'Flutter': ['Backend Development', 'UI/UX Design', 'API Development'],
+            'iOS Development': ['Backend Development', 'UI/UX Design', 'Android Development'],
+            'Android Development': ['Backend Development', 'UI/UX Design', 'iOS Development'],
+            'Product Management': ['UI/UX Design', 'Frontend Development', 'Backend Development'],
+            'Team Leadership': ['Product Management', 'DevOps', 'Full Stack Development']
+        }
+        
+        # Get database connection
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'database', 'database.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Get leader's rating and skills
+        leader_query = """
+            SELECT ur.overall_score, ur.git_score, ur.resume_score,
+                   GROUP_CONCAT(us.skill_name) as skills
+            FROM user_ratings ur
+            LEFT JOIN user_skills us ON ur.user_id = us.user_id
+            WHERE ur.user_id = ?
+            GROUP BY ur.user_id
+        """
+        cursor.execute(leader_query, (leader_user_id,))
+        leader_data = cursor.fetchone()
+        
+        if not leader_data:
+            conn.close()
+            return jsonify({"success": False, "message": "Leader rating not found"}), 404
+        
+        leader_overall = leader_data[0] or 500
+        leader_skills = leader_data[3].split(',') if leader_data[3] else []
+        
+        # Calculate rating range (±100 points)
+        min_score = max(0, leader_overall - 100)
+        max_score = min(1000, leader_overall + 100)
+        
+        # Get all potential candidates within rating range
+        candidates_query = """
+            SELECT 
+                u.user_id,
+                u.name,
+                u.email,
+                u.bio,
+                u.location,
+                u.experience,
+                ur.overall_score,
+                ur.git_score,
+                ur.resume_score,
+                ur.github_link,
+                ur.resume_data,
+                GROUP_CONCAT(us.skill_name) as skills
+            FROM users u
+            JOIN user_ratings ur ON u.user_id = ur.user_id
+            LEFT JOIN user_skills us ON u.user_id = us.user_id
+            WHERE u.user_id != ? 
+            AND ur.overall_score BETWEEN ? AND ?
+            AND u.is_active = 1
+            GROUP BY u.user_id, u.name, u.email, u.bio, u.location, u.experience,
+                     ur.overall_score, ur.git_score, ur.resume_score, ur.github_link, ur.resume_data
+        """
+        
+        cursor.execute(candidates_query, (leader_user_id, min_score, max_score))
+        
+        def calculate_complementary_score(candidate_skills, leader_skills):
+            """Calculate how well candidate's skills complement leader's skills"""
+            if not candidate_skills or not leader_skills:
+                return 0
+                
+            candidate_skill_set = set(candidate_skills)
+            leader_skill_set = set(leader_skills)
+            
+            complementary_score = 0
+            
+            # Check each leader skill for complementary matches
+            for leader_skill in leader_skills:
+                if leader_skill in COMPLEMENTARY_SKILLS:
+                    for needed_skill in COMPLEMENTARY_SKILLS[leader_skill]:
+                        if needed_skill in candidate_skill_set:
+                            complementary_score += 3  # High weight for direct complementary skills
+            
+            # Bonus for unique skills (not overlap)
+            unique_skills = len(candidate_skill_set - leader_skill_set)
+            complementary_score += unique_skills * 1
+            
+            # Small penalty for too much overlap (we want complementary, not duplicate)
+            overlap = len(candidate_skill_set & leader_skill_set)
+            if overlap > len(leader_skills) * 0.7:  # More than 70% overlap
+                complementary_score -= overlap * 0.5
+            
+            return complementary_score
+        
+        candidates = []
+        for row in cursor.fetchall():
+            candidate_skills = row[11].split(',') if row[11] else []
+            
+            # Calculate complementary score
+            comp_score = calculate_complementary_score(candidate_skills, leader_skills)
+            
+            candidate = {
+                'id': f'user_{row[0]}',
+                'user_id': row[0],
+                'name': row[1],
+                'email': row[2],
+                'bio': row[3] or "Passionate developer looking to collaborate on innovative projects.",
+                'location': row[4] or "",
+                'experience': row[5] or "",
+                'available': True,
+                'overallScore': row[6] or 500,
+                'githubScore': row[7] or 500,
+                'resumeScore': row[8] or 500,
+                'complementaryScore': comp_score,
+                'github_link': row[9] or "",
+                'resume_data': row[10] or "",
+                'skills': candidate_skills,
+                'complementary_skills': [],  # Will be populated below
+                'skill_match_details': {}  # Will show which skills are complementary vs matching
+            }
+            
+            # Identify complementary and matching skills
+            candidate_skill_set = set(candidate_skills)
+            leader_skill_set = set(leader_skills)
+            
+            for skill in candidate_skills:
+                if skill in leader_skill_set:
+                    candidate['skill_match_details'][skill] = 'matching'  # Same skill
+                else:
+                    # Check if this skill complements any leader skill
+                    is_complementary = False
+                    for leader_skill in leader_skills:
+                        if leader_skill in COMPLEMENTARY_SKILLS and skill in COMPLEMENTARY_SKILLS[leader_skill]:
+                            candidate['skill_match_details'][skill] = 'complementary'
+                            candidate['complementary_skills'].append(skill)
+                            is_complementary = True
+                            break
+                    if not is_complementary:
+                        candidate['skill_match_details'][skill] = 'unique'  # Unique skill
+            
+            candidates.append(candidate)
+        
+        # Sort candidates based on criteria
+        if sort_by == 'complementary':
+            candidates.sort(key=lambda x: x['complementaryScore'], reverse=True)
+        elif sort_by == 'overall':
+            candidates.sort(key=lambda x: x['overallScore'], reverse=True)
+        elif sort_by == 'git':
+            candidates.sort(key=lambda x: x['githubScore'], reverse=True)
+        elif sort_by == 'resume':
+            candidates.sort(key=lambda x: x['resumeScore'], reverse=True)
+        
+        # Limit results
+        candidates = candidates[:limit]
+        
+        # Generate skill recommendations for the team
+        leader_skill_set = set(leader_skills)
+        recommended_skills = set()
+        
+        for leader_skill in leader_skills:
+            if leader_skill in COMPLEMENTARY_SKILLS:
+                for comp_skill in COMPLEMENTARY_SKILLS[leader_skill]:
+                    if comp_skill not in leader_skill_set:
+                        recommended_skills.add(comp_skill)
+        
+        conn.close()
+        
+        return jsonify({
+            "success": True,
+            "candidates": candidates,
+            "leader_skills": leader_skills,
+            "recommended_skills": list(recommended_skills),
+            "rating_range": {"min": min_score, "max": max_score},
+            "total_count": len(candidates),
+            "complementary_skills_map": COMPLEMENTARY_SKILLS
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to get team candidates: {str(e)}"}), 500
+
+
+@app.route('/api/users/<int:user_id>/resume', methods=['GET'])
+def get_user_resume(user_id):
+    """Get user's resume data"""
+    try:
+        query = """
+            SELECT resume_data, u.name
+            FROM user_ratings ur
+            JOIN users u ON ur.user_id = u.user_id
+            WHERE ur.user_id = ?
+        """
+        cursor = db_manager.conn.cursor()
+        cursor.execute(query, (user_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            return jsonify({"success": False, "message": "Resume not found"}), 404
+        
+        resume_data = result[0]
+        user_name = result[1]
+        
+        if resume_data:
+            # If it's base64 data, serve it as PDF
+            if resume_data.startswith('data:application/pdf;base64,'):
+                # Remove the data URL prefix
+                base64_data = resume_data.split(',')[1]
+                pdf_bytes = base64.b64decode(base64_data)
+                
+                from flask import Response
+                return Response(
+                    pdf_bytes,
+                    mimetype='application/pdf',
+                    headers={
+                        'Content-Disposition': f'inline; filename="{user_name}_resume.pdf"'
+                    }
+                )
+            else:
+                # If it's a file path or URL, redirect
+                return jsonify({"success": True, "resume_url": resume_data}), 200
+        else:
+            return jsonify({"success": False, "message": "No resume data available"}), 404
+            
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to get resume: {str(e)}"}), 500
+
+
     if initialize_app():
         print("🚀 Starting HackBite Registration API Server...")
         print("📍 API Endpoints:")

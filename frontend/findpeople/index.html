@@ -47,15 +47,12 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-4">
                     <!-- Logo Placeholder -->
-                    <svg class="h-8 w-8 text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21v-1a6 6 0 00-5.197-5.975M15 15a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span class="text-xl font-bold text-white">TeamUp</span>
+                    <div class="text-2xl font-bold text-white">
+                        <span class="text-purple-400">Team</span>Up
+                    </div>
                 </div>
                 <div class="flex items-center">
-                    <a href="#"
+                    <a href="../homepage/homepage.html"
                         class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
                 </div>
             </div>
@@ -74,19 +71,35 @@
             <!-- Leader's score will be injected here -->
         </div>
 
+        <!-- Skill Recommendations Section -->
+        <div id="skill-recommendations" class="bg-gray-800/50 border border-gray-700 rounded-xl p-6 mb-8 hidden">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-white">🎯 Skills Your Team Needs</h3>
+                <button id="toggle-recommendations" class="text-sky-400 hover:text-sky-300 text-sm">Hide</button>
+            </div>
+            <p class="text-gray-400 text-sm mb-4">Based on your current skills, here are complementary abilities that would strengthen your team:</p>
+            <div id="recommended-skills-container" class="flex flex-wrap gap-2">
+                <!-- Recommended skills will be populated here -->
+            </div>
+        </div>
+
         <!-- Filtering and Sorting Controls -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 px-2">
             <div id="candidate-count" class="text-gray-400 mb-4 md:mb-0">
                 <!-- Candidate count will be injected here -->
             </div>
-            <div class="flex items-center gap-2 bg-gray-900 border border-gray-700 p-1 rounded-lg">
-                <span class="text-sm font-medium text-gray-300 pr-2 pl-2">Sort by:</span>
-                <button data-sort="overall"
-                    class="sort-btn bg-sky-500 text-white px-4 py-1.5 text-sm font-semibold rounded-md shadow-sm transition-colors">Overall</button>
-                <button data-sort="github"
-                    class="sort-btn text-gray-300 hover:bg-gray-700 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors">GitHub</button>
-                <button data-sort="resume"
-                    class="sort-btn text-gray-300 hover:bg-gray-700 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors">Resume</button>
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 bg-gray-900 border border-gray-700 p-1 rounded-lg">
+                    <span class="text-sm font-medium text-gray-300 pr-2 pl-2">Sort by:</span>
+                    <button data-sort="complementary"
+                        class="sort-btn bg-emerald-500 text-white px-4 py-1.5 text-sm font-semibold rounded-md shadow-sm transition-colors">🎯 Best Match</button>
+                    <button data-sort="overall"
+                        class="sort-btn text-gray-300 hover:bg-gray-700 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors">Overall</button>
+                    <button data-sort="github"
+                        class="sort-btn text-gray-300 hover:bg-gray-700 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors">GitHub</button>
+                    <button data-sort="resume"
+                        class="sort-btn text-gray-300 hover:bg-gray-700 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors">Resume</button>
+                </div>
             </div>
         </div>
 
@@ -130,22 +143,16 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- MOCK DATA ---
-            const teamLeader = {
-                name: 'Alex Ray',
-                overallScore: 750,
-                desiredSkills: ['UI/UX Design', 'Frontend Development', 'Project Management']
-            };
-            const allCandidates = [
-                { id: 'user_1', name: 'Rudra Patel', role: 'Team Builder | Full Stack', description: 'Passionate full-stack developer with a love for creating intuitive user experiences and scalable backend solutions. Eager to join a collaborative team.', available: true, overallScore: 785, githubScore: 820, resumeScore: 750, skills: ['Frontend Development', 'Video Editing', 'Content Writing', 'IoT & Embedded Systems'] },
-                { id: 'user_2', name: 'Samantha Bee', role: 'UX Specialist', description: 'I translate complex problems into beautiful, human-centered designs. My expertise lies in user research and rapid prototyping.', available: true, overallScore: 810, githubScore: 700, resumeScore: 920, skills: ['UI/UX Design', 'User Research', 'Figma', 'Prototyping'] },
-                { id: 'user_3', name: 'Mike Chen', role: 'Backend Developer', description: 'Building robust and efficient server-side logic is my specialty. Proficient in Node.js, Python, and various database technologies.', available: false, overallScore: 700, githubScore: 850, resumeScore: 550, skills: ['Node.js', 'Python', 'Database Management', 'API Design'] },
-                { id: 'user_4', name: 'Jessica Yuan', role: 'Project Manager', description: 'An organized and agile project manager who thrives on leading teams to success and delivering high-quality products on time.', available: true, overallScore: 720, githubScore: 600, resumeScore: 840, skills: ['Project Management', 'Agile Methodologies', 'Scrum', 'Team Leadership'] },
-            ];
-
+            // --- API CONFIGURATION ---
+            const API_BASE_URL = 'http://localhost:5000/api';
+            
             // --- STATE MANAGEMENT ---
-            let currentSortCriteria = 'overall';
+            let currentSortCriteria = 'complementary';  // Default to best match
+            let allCandidates = [];
+            let teamLeader = null;
             let eligibleCandidates = [];
+            let recommendedSkills = [];
+            let complementarySkillsMap = {};
 
             // --- DOM ELEMENTS ---
             const leaderInfoBar = document.getElementById('leader-info-bar');
@@ -158,66 +165,229 @@
             const modalContent = document.getElementById('modal-content');
             const modalText = document.getElementById('modal-text');
             const modalCloseBtn = document.getElementById('modal-close-btn');
+            const skillRecommendations = document.getElementById('skill-recommendations');
+            const recommendedSkillsContainer = document.getElementById('recommended-skills-container');
+            const toggleRecommendationsBtn = document.getElementById('toggle-recommendations');
 
             // --- CORE LOGIC ---
-            function initialize() {
-                displayLeaderInfo();
-                filterCandidates();
-                sortAndRenderCandidates();
+            async function initialize() {
+                await loadLeaderInfo();
+                await loadCandidates();
                 setupEventListeners();
+            }
+            
+            async function loadLeaderInfo() {
+                try {
+                    // Get current user from session/localStorage
+                    const currentUser = getCurrentUser();
+                    if (!currentUser) {
+                        showError('Please log in to access this page');
+                        return;
+                    }
+                    
+                    // Get leader's rating info
+                    const response = await fetch(`${API_BASE_URL}/user-ratings/${currentUser.user_id}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.rating) {
+                        teamLeader = {
+                            name: currentUser.name || 'Team Leader',
+                            overallScore: data.rating.overall_score || 500,
+                            githubScore: data.rating.git_score || 500,
+                            resumeScore: data.rating.resume_score || 500,
+                            desiredSkills: [] // Will be populated from API
+                        };
+                    } else {
+                        // Default leader if no rating found
+                        teamLeader = {
+                            name: currentUser.name || 'Team Leader',
+                            overallScore: 500,
+                            githubScore: 500,
+                            resumeScore: 500,
+                            desiredSkills: []
+                        };
+                    }
+                    
+                    displayLeaderInfo();
+                } catch (error) {
+                    console.error('Error loading leader info:', error);
+                    // Use default leader info
+                    teamLeader = {
+                        name: 'Team Leader',
+                        overallScore: 500,
+                        githubScore: 500,
+                        resumeScore: 500,
+                        desiredSkills: []
+                    };
+                    displayLeaderInfo();
+                }
+            }
+            
+            async function loadCandidates() {
+                try {
+                    const currentUser = getCurrentUser();
+                    if (!currentUser) return;
+                    
+                    const apiUrl = `${API_BASE_URL}/team-candidates?leader_id=${currentUser.user_id}&sort_by=${currentSortCriteria}`;
+                    
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        allCandidates = data.candidates.map(candidate => ({
+                            id: candidate.id,
+                            user_id: candidate.user_id,
+                            name: candidate.name,
+                            role: candidate.experience || 'Developer',
+                            description: candidate.bio || 'Passionate developer looking to collaborate on innovative projects.',
+                            available: candidate.available,
+                            overallScore: candidate.overallScore,
+                            githubScore: candidate.githubScore,
+                            resumeScore: candidate.resumeScore,
+                            complementaryScore: candidate.complementaryScore || 0,
+                            github_link: candidate.github_link,
+                            resume_data: candidate.resume_data,
+                            skills: candidate.skills || [],
+                            complementary_skills: candidate.complementary_skills || [],
+                            skill_match_details: candidate.skill_match_details || {}
+                        }));
+                        
+                        teamLeader.desiredSkills = data.leader_skills || [];
+                        recommendedSkills = data.recommended_skills || [];
+                        complementarySkillsMap = data.complementary_skills_map || {};
+                        
+                        eligibleCandidates = allCandidates;
+                        
+                        // Show skill recommendations if available
+                        if (recommendedSkills.length > 0) {
+                            displaySkillRecommendations();
+                        }
+                        
+                        renderCandidates(eligibleCandidates);
+                    } else {
+                        console.error('API Error:', data.message);
+                        showError(data.message || 'Failed to load candidates');
+                        eligibleCandidates = [];
+                        renderCandidates([]);
+                    }
+                } catch (error) {
+                    console.error('Error loading candidates:', error);
+                    showError('Failed to connect to server. Please check if the server is running.');
+                    eligibleCandidates = [];
+                    renderCandidates([]);
+                }
             }
 
             function displayLeaderInfo() {
                 const score = teamLeader.overallScore;
-                const lowerBound = Math.round(score * 0.9);
-                const upperBound = Math.round(score * 1.1);
+                const lowerBound = Math.max(0, score - 100);
+                const upperBound = Math.min(1000, score + 100);
                 leaderInfoBar.innerHTML = `
                     <div class="flex flex-col"><span class="text-sm text-gray-400">Your Overall Score</span><span class="text-2xl font-bold text-white">${score}</span></div>
                     <div class="border-l-2 border-gray-600 h-10 hidden sm:block"></div>
                     <div class="flex flex-col"><span class="text-sm text-gray-400">Recruiting Score Range</span><span class="text-2xl font-bold text-sky-400">${lowerBound} - ${upperBound}</span></div>`;
             }
 
-            function filterCandidates() {
-                const lowerBound = teamLeader.overallScore * 0.9;
-                const upperBound = teamLeader.overallScore * 1.1;
-                eligibleCandidates = allCandidates.filter(c => c.overallScore >= lowerBound && c.overallScore <= upperBound);
+            async function sortAndRenderCandidates() {
+                // Sort existing candidates instead of reloading
+                if (eligibleCandidates && eligibleCandidates.length > 0) {
+                    let sortKey;
+                    switch(currentSortCriteria) {
+                        case 'complementary':
+                            sortKey = 'complementaryScore';
+                            break;
+                        case 'overall':
+                            sortKey = 'overallScore';
+                            break;
+                        case 'github':
+                            sortKey = 'githubScore';
+                            break;
+                        case 'resume':
+                            sortKey = 'resumeScore';
+                            break;
+                        default:
+                            sortKey = 'complementaryScore';
+                    }
+                    
+                    const sortedCandidates = [...eligibleCandidates].sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+                    renderCandidates(sortedCandidates);
+                } else {
+                    // Only reload if no candidates exist
+                    await loadCandidates();
+                }
             }
 
-            function sortAndRenderCandidates() {
-                const sortKey = `${currentSortCriteria}Score`;
-                const sortedCandidates = [...eligibleCandidates].sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
-                renderCandidates(sortedCandidates);
-                updateCount(sortedCandidates.length);
+            function displaySkillRecommendations() {
+                if (recommendedSkills.length === 0) {
+                    skillRecommendations.classList.add('hidden');
+                    return;
+                }
+                
+                skillRecommendations.classList.remove('hidden');
+                
+                const skillsHTML = recommendedSkills.map(skill => {
+                    return `<span class="inline-block px-3 py-1 text-xs font-medium rounded-full border bg-emerald-500/20 text-emerald-300 border-emerald-500/50 hover:bg-emerald-500/30 transition-colors cursor-default" title="Your team would benefit from someone with ${skill} skills">${skill}</span>`;
+                }).join('');
+                
+                recommendedSkillsContainer.innerHTML = skillsHTML;
             }
 
             function renderCandidates(candidates) {
                 if (candidates.length === 0) {
                     grid.innerHTML = '';
                     noCandidatesMessage.classList.remove('hidden');
+                    updateCount(0);
                     return;
                 }
+                
                 noCandidatesMessage.classList.add('hidden');
-                grid.innerHTML = candidates.map(candidate => createCardHTML(candidate)).join('');
+                
+                const cardsHTML = candidates.map(candidate => createCardHTML(candidate)).join('');
+                grid.innerHTML = cardsHTML;
+                updateCount(candidates.length);
             }
 
             function createCardHTML(candidate) {
                 const availabilityClass = candidate.available ? 'bg-green-500' : 'bg-gray-500';
                 const availabilityText = candidate.available ? 'Available' : 'Unavailable';
 
+                // Enhanced skill rendering with intelligent categorization
                 const skillsHTML = candidate.skills.map(skill => {
-                    const isComplementary = teamLeader.desiredSkills.includes(skill);
-                    const skillClass = isComplementary
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                        : 'bg-gray-700/50 text-gray-300 border-gray-700/80';
-                    return `<span class="inline-block px-3 py-1 text-xs font-medium rounded-full border ${skillClass}">${skill}</span>`;
+                    const matchType = candidate.skill_match_details[skill] || 'unique';
+                    let skillClass, tooltip;
+                    
+                    switch(matchType) {
+                        case 'matching':
+                            skillClass = 'bg-blue-500/20 text-blue-300 border-blue-500/50';
+                            tooltip = `✓ You both have ${skill} skills`;
+                            break;
+                        case 'complementary':
+                            skillClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50';
+                            tooltip = `🎯 ${skill} complements your team perfectly!`;
+                            break;
+                        case 'unique':
+                        default:
+                            skillClass = 'bg-purple-500/20 text-purple-300 border-purple-500/50';
+                            tooltip = `+ ${skill} is a unique skill they bring`;
+                    }
+                    
+                    return `<span class="inline-block px-3 py-1 text-xs font-medium rounded-full border ${skillClass}" title="${tooltip}">${skill}</span>`;
                 }).join('');
 
                 const overallProgress = Math.round((candidate.overallScore / 1000) * 100);
                 const githubProgress = Math.round((candidate.githubScore / 1000) * 100);
                 const resumeProgress = Math.round((candidate.resumeScore / 1000) * 100);
+                const complementaryProgress = Math.min(100, Math.round((candidate.complementaryScore / 10) * 100)); // Scale complementary score
+
+                // Show complementary score badge for top matches
+                const complementaryBadge = candidate.complementaryScore > 5 ? 
+                    `<div class="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                        🎯 ${candidate.complementaryScore}
+                    </div>` : '';
 
                 return `
-                    <div class="bg-[#161b22] border border-gray-800 rounded-2xl p-6 transition-all duration-300 hover:border-sky-500 hover:shadow-2xl hover:shadow-sky-500/10">
+                    <div class="relative bg-[#161b22] border border-gray-800 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-500/10">
+                        ${complementaryBadge}
                         <div class="flex justify-between items-start gap-6">
                             <!-- Left: Main Info -->
                             <div class="flex-1">
@@ -227,19 +397,37 @@
                                 </div>
                                 <p class="text-md text-gray-300">${candidate.role}</p>
                                 <p class="text-sm text-gray-400 mt-3">${candidate.description}</p>
+                                ${candidate.complementary_skills.length > 0 ? `
+                                    <div class="mt-3 p-2 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
+                                        <p class="text-xs text-emerald-300 font-medium">🎯 Perfect complement: ${candidate.complementary_skills.slice(0, 3).join(', ')}</p>
+                                    </div>
+                                ` : ''}
                             </div>
                             <!-- Right: Ratings -->
                             <div class="flex items-start gap-4">
-                                ${createRadialProgress(overallProgress, candidate.overallScore, 'Overall', getProgressColor(candidate.overallScore))}
+                                ${currentSortCriteria === 'complementary' ? 
+                                    createRadialProgress(complementaryProgress, candidate.complementaryScore, 'Match', '#10b981') :
+                                    createRadialProgress(overallProgress, candidate.overallScore, 'Overall', getProgressColor(candidate.overallScore))
+                                }
                                 ${createRadialProgress(githubProgress, candidate.githubScore, 'GitHub', '#38bdf8')}
                                 ${createRadialProgress(resumeProgress, candidate.resumeScore, 'Resume', '#c084fc')}
                                 <div class="hidden md:flex items-center gap-2 text-sm ml-4"><span>${availabilityText}</span><div class="w-3 h-3 rounded-full ${availabilityClass}"></div></div>
                             </div>
                         </div>
-                        <div class="mt-6 border-t border-gray-800 pt-4"><h3 class="text-sm font-semibold uppercase text-gray-400 mb-3">Core Skills</h3><div class="flex flex-wrap gap-2">${skillsHTML}</div></div>
+                        <div class="mt-6 border-t border-gray-800 pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-sm font-semibold uppercase text-gray-400">Skills</h3>
+                                <div class="flex gap-1 text-xs">
+                                    <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-blue-500/50"></div>Shared</span>
+                                    <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-emerald-500/50"></div>Complementary</span>
+                                    <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-purple-500/50"></div>Unique</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2">${skillsHTML}</div>
+                        </div>
                         <div class="mt-6 flex gap-3">
-                            <button class="w-full text-center py-2.5 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg text-white font-semibold transition-colors">View Profile</button>
-                            <button class="invite-btn w-full text-center py-2.5 bg-sky-600 hover:bg-sky-500 rounded-lg text-white font-semibold transition-colors" data-candidate-name="${candidate.name}">Send Invite</button>
+                            <button class="view-profile-btn w-full text-center py-2.5 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg text-white font-semibold transition-colors" data-candidate='${JSON.stringify(candidate)}'>View Profile</button>
+                            <button class="invite-btn w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-semibold transition-colors" data-candidate-name="${candidate.name}">Send Invite</button>
                         </div>
                     </div>`;
             }
@@ -250,24 +438,41 @@
             }
 
             function updateCount(count) {
-                countDisplay.innerHTML = `<span class="font-semibold text-white">${count}</span> matching candidates found`;
+                const countHTML = `<span class="font-semibold text-white">${count}</span> matching candidates found`;
+                countDisplay.innerHTML = countHTML;
             }
 
             function setupEventListeners() {
                 sortButtons.forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        currentSortCriteria = e.target.dataset.sort;
+                    button.addEventListener('click', async (e) => {
+                        const newSortCriteria = e.target.dataset.sort;
+                        
+                        // Only update if different
+                        if (newSortCriteria === currentSortCriteria) {
+                            return;
+                        }
+                        
+                        currentSortCriteria = newSortCriteria;
+                        
+                        // Update button styles
                         sortButtons.forEach(btn => {
-                            btn.classList.remove('bg-sky-500', 'text-white');
+                            btn.classList.remove('bg-sky-500', 'bg-emerald-500', 'text-white');
                             btn.classList.add('text-gray-300', 'hover:bg-gray-700');
                         });
-                        e.target.classList.add('bg-sky-500', 'text-white');
+                        
+                        if (newSortCriteria === 'complementary') {
+                            e.target.classList.add('bg-emerald-500', 'text-white');
+                        } else {
+                            e.target.classList.add('bg-sky-500', 'text-white');
+                        }
                         e.target.classList.remove('text-gray-300', 'hover:bg-gray-700');
+                        
+                        // Sort existing candidates
                         sortAndRenderCandidates();
                     });
                 });
 
-                // Event listener for invite buttons using event delegation
+                // Event listener for buttons using event delegation
                 grid.addEventListener('click', (e) => {
                     if (e.target.classList.contains('invite-btn')) {
                         const button = e.target;
@@ -282,11 +487,75 @@
                         // Show modal
                         showModal(candidateName);
                     }
+                    
+                    if (e.target.classList.contains('view-profile-btn')) {
+                        const candidateData = JSON.parse(e.target.dataset.candidate);
+                        showProfileModal(candidateData);
+                    }
                 });
 
                 // Event listeners for closing the modal
                 modalOverlay.addEventListener('click', hideModal);
                 modalCloseBtn.addEventListener('click', hideModal);
+                
+                // Toggle skill recommendations
+                if (toggleRecommendationsBtn) {
+                    toggleRecommendationsBtn.addEventListener('click', () => {
+                        if (skillRecommendations.classList.contains('hidden')) {
+                            skillRecommendations.classList.remove('hidden');
+                            toggleRecommendationsBtn.textContent = 'Hide';
+                        } else {
+                            skillRecommendations.classList.add('hidden');
+                            toggleRecommendationsBtn.textContent = 'Show Skills Your Team Needs';
+                        }
+                    });
+                }
+            }
+            
+            function showProfileModal(candidate) {
+                const profileHTML = `
+                    <div class="text-center">
+                        <h3 class="text-xl font-bold text-white mb-4">${candidate.name}'s Profile</h3>
+                        <div class="text-left space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-400">Bio:</p>
+                                <p class="text-white">${candidate.description}</p>
+                            </div>
+                            ${candidate.github_link ? `
+                                <div>
+                                    <p class="text-sm text-gray-400">GitHub:</p>
+                                    <a href="${candidate.github_link}" target="_blank" class="text-sky-400 hover:text-sky-300">${candidate.github_link}</a>
+                                </div>
+                            ` : ''}
+                            ${candidate.resume_data ? `
+                                <div>
+                                    <p class="text-sm text-gray-400">Resume:</p>
+                                    <button onclick="viewResume('${candidate.user_id}')" class="text-sky-400 hover:text-sky-300">View Resume</button>
+                                </div>
+                            ` : ''}
+                            <div>
+                                <p class="text-sm text-gray-400">Skills:</p>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    ${candidate.skills.map(skill => `<span class="bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs">${skill}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('modal-content').innerHTML = profileHTML + `
+                    <div class="mt-6">
+                        <button onclick="hideModal()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-2 px-4 rounded-lg">
+                            Close
+                        </button>
+                    </div>
+                `;
+                
+                inviteModal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalOverlay.classList.remove('opacity-0');
+                    modalContent.classList.remove('scale-95');
+                }, 10);
             }
 
             function showModal(candidateName) {
@@ -303,7 +572,7 @@
                 modalContent.classList.add('scale-95');
                 setTimeout(() => {
                     inviteModal.classList.add('hidden');
-                }, 300); // Wait for transition to finish
+                }, 300);
             }
 
             function getProgressColor(score) {
@@ -311,6 +580,33 @@
                 if (score > 650) return '#38bdf8';
                 return '#f97316';
             }
+            
+            function getCurrentUser() {
+                // Get from localStorage or session
+                const userData = localStorage.getItem('currentUser');
+                if (userData) {
+                    return JSON.parse(userData);
+                }
+                
+                // Default test user that has ratings and will show candidates
+                return {
+                    user_id: 22,
+                    name: 'Test Leader'
+                };
+            }
+            
+            function showError(message) {
+                console.error(message);
+                // You could add a toast notification here
+            }
+            
+            // Global function for resume viewing
+            window.viewResume = function(userId) {
+                // Open resume in new tab/window
+                window.open(`${API_BASE_URL}/users/${userId}/resume`, '_blank');
+            };
+            
+            window.hideModal = hideModal;
 
             initialize();
         });

@@ -88,6 +88,11 @@
                     Create Team
                 </button>
                 
+                <!-- Find People Button -->
+                <button type="button" id="find-people-btn" class="w-full text-white bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:ring-purple-800 font-medium rounded-lg text-md px-5 py-4 text-center transition mt-4">
+                    Find People for Team
+                </button>
+                
                 <!-- Status Messages -->
                 <div id="status-message" class="hidden p-4 rounded-lg text-center"></div>
             </form>
@@ -97,6 +102,71 @@
     <script>
         // API Configuration
         const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Function to check user registration status
+        async function checkUserRegistration(userId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}`);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // User is registered in the system
+                    return { registered: true, user: data.user };
+                } else {
+                    // User not found in registration system
+                    return { registered: false, user: null };
+                }
+            } catch (error) {
+                console.error('Error checking user registration:', error);
+                // Assume not registered if we can't check
+                return { registered: false, user: null };
+            }
+        }
+
+        // Function to handle Find People button click
+        async function handleFindPeopleClick() {
+            const currentUser = getCurrentUser();
+            
+            if (!currentUser) {
+                showError('You must be logged in to find people for your team.');
+                return;
+            }
+            
+            // Show loading state
+            const findPeopleBtn = document.getElementById('find-people-btn');
+            const originalText = findPeopleBtn.textContent;
+            findPeopleBtn.disabled = true;
+            findPeopleBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Checking Registration...
+            `;
+            
+            try {
+                // Check if user is registered in the system
+                const registrationStatus = await checkUserRegistration(currentUser.user_id);
+                
+                if (registrationStatus.registered) {
+                    // User is registered, redirect to find people page
+                    window.location.href = '../findpeople/index.html';
+                } else {
+                    // User is not registered, redirect to registration first
+                    showSuccess('Please complete your registration first to access team features.');
+                    setTimeout(() => {
+                        window.location.href = '../registration/login.html';
+                    }, 2000);
+                }
+            } catch (error) {
+                showError('Unable to verify registration status. Please try again.');
+                console.error('Error in handleFindPeopleClick:', error);
+            } finally {
+                // Restore button state
+                findPeopleBtn.disabled = false;
+                findPeopleBtn.textContent = originalText;
+            }
+        }
 
         // Helper function to get user from localStorage or session
         function getCurrentUser() {
@@ -253,6 +323,10 @@
 
             // --- Form Submission Logic ---
             form.addEventListener('submit', handleFormSubmit);
+            
+            // --- Find People Button Logic ---
+            const findPeopleBtn = document.getElementById('find-people-btn');
+            findPeopleBtn.addEventListener('click', handleFindPeopleClick);
         });
 
         // Function to check if user already created a team for this hackathon
