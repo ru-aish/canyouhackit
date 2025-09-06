@@ -99,6 +99,19 @@ body {
     margin-top: -4px;
 }
 
+/* Better proportions for "Not rated yet" text */
+.rating-text span[style*="font-size: 0.9rem"] {
+    color: #9ca3af;
+    text-align: center;
+    display: block;
+}
+
+.rating-text span[style*="font-size: 0.9rem"] + .small {
+    color: #6b7280;
+    font-size: 0.75rem;
+    margin-top: 2px;
+}
+
 .rating-breakdown {
     display: flex;
     flex-direction: column;

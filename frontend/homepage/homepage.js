@@ -349,16 +349,11 @@ async function loadUserRatings() {
             }
         }
     } catch (error) {
-        console.log('API not available, showing default ratings:', error);
+        console.log('API not available, showing no ratings message:', error);
     }
     
-    // Show default ratings as fallback
-    const defaultRatings = {
-        overall_score: 700,
-        github_score: 600,
-        resume_score: 750
-    };
-    displayRatings(defaultRatings);
+    // Show "No ratings yet" for new users
+    displayRatings(null);
 }
 
 function displayRatings(ratings) {
@@ -367,6 +362,7 @@ function displayRatings(ratings) {
     const githubScore = document.getElementById('github-score');
     const resumeScore = document.getElementById('resume-score');
     const progressCircle = document.getElementById('progress-circle');
+    const submitButton = document.getElementById('submit-profile-btn');
     
     if (!ratingContainer || !overallScore || !githubScore || !resumeScore || !progressCircle) {
         console.error('Rating display elements not found');
@@ -377,15 +373,44 @@ function displayRatings(ratings) {
     ratingContainer.classList.remove('hidden');
     ratingContainer.style.display = 'block';
     
+    // Handle case when no ratings are available
+    if (!ratings) {
+        // Simple, clean display for no ratings with smaller text
+        overallScore.innerHTML = `
+            <span style="font-size: 0.9rem; font-weight: 600; line-height: 1.2;">Not rated<br>yet</span>
+            <span class="small">Overall</span>
+        `;
+        githubScore.textContent = "Not rated yet";
+        resumeScore.textContent = "Not rated yet";
+        
+        // Reset progress circle to empty state (simple)
+        progressCircle.style.strokeDashoffset = '314'; // Full circle (no progress)
+        progressCircle.style.stroke = '#374151'; // Gray color for empty state
+        
+        console.log('Displaying: Not rated yet');
+        return;
+    }
+    
+    // Remove any custom styling when we have actual ratings
+    overallScore.style.fontSize = '';
+    overallScore.style.fontWeight = '';
+    overallScore.style.lineHeight = '';
+    
     // Handle both API formats: new format uses git_score, old format uses github_score
-    const overallValue = ratings.overall_score || 700;
-    const githubValue = ratings.git_score || ratings.github_score || 600;
-    const resumeValue = ratings.resume_score || 750;
+    const overallValue = ratings.overall_score || 0;
+    const githubValue = ratings.git_score || ratings.github_score || 0;
+    const resumeValue = ratings.resume_score || 0;
     
     // Update scores with actual values
-    overallScore.textContent = overallValue;
+    overallScore.innerHTML = `
+        ${overallValue}
+        <span class="small">Overall</span>
+    `;
     githubScore.textContent = githubValue;
     resumeScore.textContent = resumeValue;
+    
+    // Reset progress circle color for actual ratings
+    progressCircle.style.stroke = '#10b981'; // Green color for actual ratings
     
     console.log('Displaying ratings:', { overall: overallValue, github: githubValue, resume: resumeValue });
     
