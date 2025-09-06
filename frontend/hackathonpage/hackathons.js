@@ -59,8 +59,8 @@ function createHackathonCard(hackathon) {
     const regStr = `Registration: ${regDeadline.toLocaleDateString()}`;
     
     card.innerHTML = `
-        <div class="relative">
-            <img src="${getHackathonImage(hackathon.name)}" alt="${hackathon.name}" class="w-full h-48 object-cover">
+        <div class="relative aspect-video overflow-hidden">
+            <img src="${getHackathonImage(hackathon.name)}" alt="${hackathon.name}" class="w-full h-full object-cover">
             <div class="absolute top-2 right-2 bg-${getStatusColor(hackathon.status)}-600 text-white px-2 py-1 rounded text-xs font-bold">
                 ${hackathon.status.toUpperCase()}
             </div>
