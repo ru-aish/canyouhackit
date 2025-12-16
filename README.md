@@ -1,4 +1,4 @@
-# HackBite - Self-Contained Backend
+# Can You Hack It? - Self-Contained Backend
 
 # Video link : https://drive.google.com/drive/u/1/folders/1QxsoJDjuHptMJj3HUdTK4ztqJq1A7EZX
 
